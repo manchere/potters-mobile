@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Potter's Inventory",
+    "slug": "potters-inventory-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "pottersinventory",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to photograph items and scan barcodes for the inventory."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Potter's Inventory to use the camera to photograph items and scan barcodes."
+        }
+      ]
+    ]
+  }
+}
