@@ -4,7 +4,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { api } from "../api/client";
-import { roleIcon, roleLabel } from "../api/roleDisplay";
 import type { Assignment } from "../api/types";
 import type { RootStackParamList } from "../navigation";
 
@@ -54,13 +53,13 @@ export default function MyAssignmentsScreen({ navigation }: Props) {
               onPress={() =>
                 navigation.navigate("NonAvailabilityRequest", {
                   assignmentId: item.id,
-                  assignmentTitle: `${roleIcon(item.role)} ${roleLabel(item.role)}`,
+                  assignmentTitle: `${item.role_icon} ${item.role_name}`,
                 })
               }
             >
               <View style={styles.rowText}>
                 <Text style={styles.rowTitle}>
-                  {roleIcon(item.role)} {roleLabel(item.role)}
+                  {item.role_icon} {item.role_name}
                 </Text>
                 <Text style={styles.rowSubtitle}>{item.service_date}</Text>
                 {item.conflicts_with_calendar && !hasRequest ? (

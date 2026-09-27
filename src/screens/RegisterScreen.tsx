@@ -67,7 +67,7 @@ export default function RegisterScreen({ navigation, onAuthenticated }: Props) {
       <Pressable style={[styles.button, loading && styles.buttonDisabled]} onPress={submit} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? "Creating..." : "Create Profile"}</Text>
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Login")}>
+      <Pressable onPress={() => navigation.popTo("Login")}>
         <Text style={styles.link}>Already have a profile? Log in</Text>
       </Pressable>
     </ScrollView>

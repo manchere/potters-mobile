@@ -57,11 +57,15 @@ export interface NonAvailabilityRequest {
   decided_at: string | null;
 }
 
-export type AssignmentRole = "singing" | "translating" | "preaching" | "offering" | "announcement";
-
 export interface Assignment {
   id: number;
-  role: AssignmentRole;
+  // role_id points at an admin-manageable duty type (no longer a fixed
+  // enum -- see PottersInventory/Models/RoleType.h); role_name/role_icon
+  // are denormalized onto the assignment by the server so the client
+  // never needs a separate lookup.
+  role_id: number;
+  role_name: string;
+  role_icon: string;
   service_date: string; // "YYYY-MM-DD"
   member_id: number | null;
   support_member_id: number | null;
