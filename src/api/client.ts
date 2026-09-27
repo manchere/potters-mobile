@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
 import * as authStorage from "./authStorage";
 import type {
   Assignment,
@@ -20,7 +20,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers, signal: controller.signal });
+  } catch {
+    // Network-level failure (wrong address, server down, firewall, phone
+    // on a different network) - name the URL so it's obvious what to fix.
+    throw new Error(`Can't reach the server at ${API_BASE_URL}. Check it's running and on the same network.`);
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error ?? `${response.status} ${response.statusText}`);

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import * as authStorage from "../api/authStorage";
 import { api } from "../api/client";
+import { API_BASE_URL } from "../config";
 import type { RootStackParamList } from "../navigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login"> & { onAuthenticated: () => void };
@@ -53,6 +54,7 @@ export default function LoginScreen({ navigation, onAuthenticated }: Props) {
       <Pressable onPress={() => navigation.navigate("Register")}>
         <Text style={styles.link}>Need a profile? Create one</Text>
       </Pressable>
+      <Text style={styles.server}>Server: {API_BASE_URL}</Text>
     </View>
   );
 }
@@ -73,4 +75,5 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 15 },
   link: { color: "#2563eb", textAlign: "center", marginTop: 12 },
   error: { color: "#dc2626", marginBottom: 4 },
+  server: { color: "#9ca3af", textAlign: "center", fontSize: 12, marginTop: 24 },
 });
