@@ -60,7 +60,7 @@ export interface NonAvailabilityRequest {
 export interface Duty {
   id: number;
   // duty_type_id points at an admin-manageable duty type (no longer a fixed
-  // enum -- see PottersInventory/Models/DutyType.h); duty_type_name/duty_type_icon
+  // enum -- see src/Models/DutyType.h); duty_type_name/duty_type_icon
   // are denormalized onto the duty by the server so the client
   // never needs a separate lookup.
   duty_type_id: number;

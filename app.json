@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Potter's Inventory",
-    "slug": "potters-inventory-mobile",
+    "name": "Potter's Portal",
+    "slug": "potters-portal-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "scheme": "pottersinventory",
+    "scheme": "pottersportal",
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -21,7 +21,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Potter's Inventory to use the camera to photograph items and scan barcodes."
+          "cameraPermission": "Allow Potter's Portal to use the camera to photograph items and scan barcodes."
         }
       ],
       "expo-asset"

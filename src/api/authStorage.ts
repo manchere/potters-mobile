@@ -5,8 +5,8 @@ import type { User } from "./types";
 // There's no GET /api/users/me endpoint - register/login already return the
 // full user object, so it's cached here alongside the token instead of
 // re-fetched.
-const TOKEN_KEY = "potters_inventory_auth_token";
-const USER_KEY = "potters_inventory_auth_user";
+const TOKEN_KEY = "potters_portal_auth_token";
+const USER_KEY = "potters_portal_auth_user";
 
 export async function getToken(): Promise<string | null> {
   try {

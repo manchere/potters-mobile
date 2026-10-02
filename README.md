@@ -1,4 +1,4 @@
-# Potter's Inventory — Mobile
+# Potter's Portal — Mobile
 
 React Native (Expo) app for iOS/Android. It talks to `PottersPortalServer`
 over HTTP — the same REST API the `web/` frontend uses — so it shares one
@@ -126,4 +126,3 @@ mobile/
 - Offline queueing — every action requires a live connection to the server.
 - Auth — the REST API currently has none; add it at the server before
   shipping this beyond a trusted local network.
-# pottersinventory
