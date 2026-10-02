@@ -1,7 +1,7 @@
 # Mobile App — Functional Requirements
 
 Scope: the React Native mobile client in `mobile/`, consuming the existing
-`PottersInventoryServer` REST API. No new backend capability is assumed
+`PottersPortalServer` REST API. No new backend capability is assumed
 beyond what's listed under "Backend dependencies" per requirement.
 
 ## FR1 — Store an item by taking a photo
@@ -165,7 +165,7 @@ submitted with its current status (pending/approved/denied).
   vision model's description, not a photo-to-photo image comparison).
 - Editing or deleting items, and tag/category management, from mobile.
 - Offline support — every flow above requires a live connection to
-  `PottersInventoryServer`.
+  `PottersPortalServer`.
 - Admin-only scheduling flows (duty CRUD, non-availability
   approve/deny) — those are desktop-only, see
   `SCHEDULING_FUNCTIONAL_REQUIREMENTS.md`.

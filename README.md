@@ -1,6 +1,6 @@
 # Potter's Inventory — Mobile
 
-React Native (Expo) app for iOS/Android. It talks to `PottersInventoryServer`
+React Native (Expo) app for iOS/Android. It talks to `PottersPortalServer`
 over HTTP — the same REST API the `web/` frontend uses — so it shares one
 Postgres-backed source of truth with the desktop app and browser UI. It does
 not embed any business logic; every read/write goes through the server's
@@ -36,7 +36,7 @@ branch:
 - `Controllers/ItemController` gained `itemByBarcode()`.
 - `Server/ServerMain.cpp` gained `GET /api/items/barcode/<code>`.
 
-Run migrations and start `PottersInventoryServer` before using the app.
+Run migrations and start `PottersPortalServer` before using the app.
 
 ## Running in Expo Go
 
@@ -47,14 +47,14 @@ must support SDK 57 (the current store version does).
 1. Start the backend on your computer (listens on port 8080):
 
    ```
-   PottersInventoryServer.exe
+   PottersPortalServer.exe
    ```
 
    On Windows, allow it through the firewall once so the phone can reach it
    (PowerShell as Administrator):
 
    ```
-   New-NetFirewallRule -DisplayName "PottersInventoryServer" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private
+   New-NetFirewallRule -DisplayName "PottersPortalServer" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private
    ```
 
 2. Start Metro:

@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// PottersInventoryServer listens on this port by default (see
+// PottersPortalServer listens on this port by default (see
 // Server/ServerMain.cpp). Override with EXPO_PUBLIC_API_PORT if it runs
 // elsewhere.
 const API_PORT = process.env.EXPO_PUBLIC_API_PORT || "8080";
@@ -12,7 +12,7 @@ const API_PORT = process.env.EXPO_PUBLIC_API_PORT || "8080";
 const LAN_HOST = /^(\d{1,3}\.){3}\d{1,3}$|\.local$/;
 
 // When the app runs in Expo Go, hostUri is "<dev machine LAN IP>:<metro
-// port>" - the same machine PottersInventoryServer runs on during
+// port>" - the same machine PottersPortalServer runs on during
 // development, and an address the phone can already reach (it just
 // downloaded the JS bundle from it).
 function devMachineHost(): string | null {
