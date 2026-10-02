@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Potter's Portal",
+    "name": "Potters Portal",
     "slug": "potters-portal-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -21,7 +21,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Potter's Portal to use the camera to photograph items and scan barcodes."
+          "cameraPermission": "Allow Potters Portal to use the camera to photograph items and scan barcodes."
         }
       ],
       "expo-asset"

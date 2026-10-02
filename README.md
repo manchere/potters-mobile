@@ -1,4 +1,4 @@
-# Potter's Portal — Mobile
+# Potters Portal — Mobile
 
 React Native (Expo) app for iOS/Android. It talks to `PottersPortalServer`
 over HTTP — the same REST API the `web/` frontend uses — so it shares one
