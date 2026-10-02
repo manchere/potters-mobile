@@ -39,8 +39,8 @@ export default function MemberHomeScreen({ navigation, onLogout }: Props) {
         </View>
       ) : null}
 
-      <Pressable style={styles.menuItem} onPress={() => navigation.navigate("MyAssignments")}>
-        <Text style={styles.menuItemText}>My Assignments</Text>
+      <Pressable style={styles.menuItem} onPress={() => navigation.navigate("MyDuties")}>
+        <Text style={styles.menuItemText}>My Duties</Text>
       </Pressable>
       <Pressable style={styles.menuItem} onPress={() => navigation.navigate("AvailabilityCalendar")}>
         <Text style={styles.menuItemText}>Availability Calendar</Text>

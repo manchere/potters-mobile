@@ -8,10 +8,10 @@ import type { RootStackParamList } from "../navigation";
 type Props = NativeStackScreenProps<RootStackParamList, "NonAvailabilityRequest">;
 
 // FR-4.3/4.4: a message is required before this can be submitted; the
-// backend also enforces FR-4.1 (the assignment must actually be the
+// backend also enforces FR-4.1 (the duty must actually be the
 // Member's) and always inserts as pending (FR-4.4/FR-5).
 export default function NonAvailabilityRequestScreen({ route, navigation }: Props) {
-  const { assignmentId, assignmentTitle } = route.params;
+  const { dutyId, dutyTitle } = route.params;
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -24,7 +24,7 @@ export default function NonAvailabilityRequestScreen({ route, navigation }: Prop
     setSubmitting(true);
     setError(null);
     try {
-      await api.nonAvailabilityRequests.create(assignmentId, message.trim());
+      await api.nonAvailabilityRequests.create(dutyId, message.trim());
       navigation.goBack();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit request");
@@ -35,11 +35,11 @@ export default function NonAvailabilityRequestScreen({ route, navigation }: Prop
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Request time off — {assignmentTitle}</Text>
+      <Text style={styles.title}>Request time off — {dutyTitle}</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <TextInput
         style={styles.textArea}
-        placeholder="Explain why you can't make this assignment"
+        placeholder="Explain why you can't make this duty"
         multiline
         numberOfLines={5}
         value={message}

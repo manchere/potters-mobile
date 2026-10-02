@@ -1,7 +1,7 @@
 import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
 import * as authStorage from "./authStorage";
 import type {
-  Assignment,
+  Duty,
   AuthResponse,
   AvailabilityMark,
   Category,
@@ -91,10 +91,10 @@ export const api = {
       }),
     logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   },
-  assignments: {
-    // Upcoming assignments for the logged-in Member (as primary or
+  duties: {
+    // Upcoming duties for the logged-in Member (as primary or
     // support), each flagged with conflicts_with_calendar per FR-4.2.
-    listMine: () => request<Assignment[]>("/api/assignments/me"),
+    listMine: () => request<Duty[]>("/api/duties/me"),
   },
   availability: {
     list: () => request<AvailabilityMark[]>("/api/availability"),
@@ -104,8 +104,8 @@ export const api = {
   },
   nonAvailabilityRequests: {
     listMine: () => request<NonAvailabilityRequest[]>("/api/non-availability-requests/me"),
-    create: (assignmentId: number, message: string) =>
-      request<NonAvailabilityRequest>(`/api/assignments/${assignmentId}/non-availability-requests`, {
+    create: (dutyId: number, message: string) =>
+      request<NonAvailabilityRequest>(`/api/duties/${dutyId}/non-availability-requests`, {
         method: "POST",
         body: JSON.stringify({ message }),
       }),

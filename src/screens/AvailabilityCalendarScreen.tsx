@@ -9,7 +9,7 @@ import type { AvailabilityMark } from "../api/types";
 // FR-3.1/3.2: marking a date here is informational only (no message, no
 // Admin approval) - it's the Admin scheduling a Member on a marked date
 // that triggers the formal request flow (FR-4.2), surfaced on
-// MyAssignmentsScreen.
+// MyDutiesScreen.
 export default function AvailabilityCalendarScreen() {
   const [marks, setMarks] = useState<AvailabilityMark[]>([]);
   const [error, setError] = useState<string | null>(null);

@@ -119,34 +119,34 @@ full spec this and FR5-FR8 below implement.
 
 **Status:** implemented — [LoginScreen.tsx](src/screens/LoginScreen.tsx), [RegisterScreen.tsx](src/screens/RegisterScreen.tsx)
 
-## FR5 — View my upcoming assignments
+## FR5 — View my upcoming duties
 
-**Flow:** Member Home → My Assignments lists every upcoming Sunday
-assignment the Member is on (as primary or support), soonest first.
+**Flow:** Member Home → My Duties lists every upcoming Sunday
+duty the Member is on (as primary or support), soonest first.
 
-**Backend dependencies:** `GET /api/assignments/me` (new)
+**Backend dependencies:** `GET /api/duties/me` (new)
 
-**Status:** implemented — [MyAssignmentsScreen.tsx](src/screens/MyAssignmentsScreen.tsx)
+**Status:** implemented — [MyDutiesScreen.tsx](src/screens/MyDutiesScreen.tsx)
 
 ## FR6 — Mark general availability
 
 **Flow:** Member Home → Availability Calendar → tap a date to toggle it as
 a day the Member expects not to be at church. Informational only — no
-message, no approval (that's FR7, and only once an assignment actually
+message, no approval (that's FR7, and only once a duty actually
 collides with a marked date).
 
 **Backend dependencies:** `GET/POST /api/availability`, `DELETE /api/availability/:date` (new)
 
 **Status:** implemented — [AvailabilityCalendarScreen.tsx](src/screens/AvailabilityCalendarScreen.tsx)
 
-## FR7 — Request time off for a specific assignment
+## FR7 — Request time off for a specific duty
 
-**Flow:** My Assignments flags any assignment whose date collides with a
-general-calendar mark; tapping it (or any assignment without an existing
+**Flow:** My Duties flags any duty whose date collides with a
+general-calendar mark; tapping it (or any duty without an existing
 request) opens a message form. Submitting requires a non-empty message and
 creates a pending request an Admin must approve/deny (desktop app).
 
-**Backend dependencies:** `POST /api/assignments/:id/non-availability-requests` (new)
+**Backend dependencies:** `POST /api/duties/:id/non-availability-requests` (new)
 
 **Status:** implemented — [NonAvailabilityRequestScreen.tsx](src/screens/NonAvailabilityRequestScreen.tsx)
 
@@ -166,6 +166,6 @@ submitted with its current status (pending/approved/denied).
 - Editing or deleting items, and tag/category management, from mobile.
 - Offline support — every flow above requires a live connection to
   `PottersInventoryServer`.
-- Admin-only scheduling flows (assignment CRUD, non-availability
+- Admin-only scheduling flows (duty CRUD, non-availability
   approve/deny) — those are desktop-only, see
   `SCHEDULING_FUNCTIONAL_REQUIREMENTS.md`.

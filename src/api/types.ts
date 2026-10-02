@@ -49,7 +49,7 @@ export type NonAvailabilityStatus = "pending" | "approved" | "denied";
 
 export interface NonAvailabilityRequest {
   id: number;
-  assignment_id: number;
+  duty_id: number;
   user_id: number;
   message: string;
   status: NonAvailabilityStatus;
@@ -57,20 +57,20 @@ export interface NonAvailabilityRequest {
   decided_at: string | null;
 }
 
-export interface Assignment {
+export interface Duty {
   id: number;
-  // role_id points at an admin-manageable duty type (no longer a fixed
-  // enum -- see PottersInventory/Models/RoleType.h); role_name/role_icon
-  // are denormalized onto the assignment by the server so the client
+  // duty_type_id points at an admin-manageable duty type (no longer a fixed
+  // enum -- see PottersInventory/Models/DutyType.h); duty_type_name/duty_type_icon
+  // are denormalized onto the duty by the server so the client
   // never needs a separate lookup.
-  role_id: number;
-  role_name: string;
-  role_icon: string;
+  duty_type_id: number;
+  duty_type_name: string;
+  duty_type_icon: string;
   service_date: string; // "YYYY-MM-DD"
   member_id: number | null;
   support_member_id: number | null;
   notes: string;
-  // Only present on GET /api/assignments/me.
+  // Only present on GET /api/duties/me.
   conflicts_with_calendar?: boolean;
   non_availability_request?: NonAvailabilityRequest | null;
 }

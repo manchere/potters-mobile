@@ -11,7 +11,7 @@ import ItemDetailScreen from "../screens/ItemDetailScreen";
 import ItemListScreen from "../screens/ItemListScreen";
 import LoginScreen from "../screens/LoginScreen";
 import MemberHomeScreen from "../screens/MemberHomeScreen";
-import MyAssignmentsScreen from "../screens/MyAssignmentsScreen";
+import MyDutiesScreen from "../screens/MyDutiesScreen";
 import MyRequestsScreen from "../screens/MyRequestsScreen";
 import NonAvailabilityRequestScreen from "../screens/NonAvailabilityRequestScreen";
 import RegisterScreen from "../screens/RegisterScreen";
@@ -21,10 +21,10 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   MemberHome: undefined;
-  MyAssignments: undefined;
+  MyDuties: undefined;
   AvailabilityCalendar: undefined;
   MyRequests: undefined;
-  NonAvailabilityRequest: { assignmentId: number; assignmentTitle: string };
+  NonAvailabilityRequest: { dutyId: number; dutyTitle: string };
   ItemList: undefined;
   ItemDetail: { itemId: number };
   AddItem:
@@ -69,7 +69,7 @@ export default function RootNavigator() {
             <Stack.Screen name="MemberHome" options={{ title: "Home" }}>
               {(props) => <MemberHomeScreen {...props} onLogout={() => setIsAuthenticated(false)} />}
             </Stack.Screen>
-            <Stack.Screen name="MyAssignments" component={MyAssignmentsScreen} options={{ title: "My Assignments" }} />
+            <Stack.Screen name="MyDuties" component={MyDutiesScreen} options={{ title: "My Duties" }} />
             <Stack.Screen
               name="AvailabilityCalendar"
               component={AvailabilityCalendarScreen}

@@ -4,16 +4,16 @@ import { useFocusEffect } from "@react-navigation/native";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { api } from "../api/client";
-import type { Assignment } from "../api/types";
+import type { Duty } from "../api/types";
 import type { RootStackParamList } from "../navigation";
 
-type Props = NativeStackScreenProps<RootStackParamList, "MyAssignments">;
+type Props = NativeStackScreenProps<RootStackParamList, "MyDuties">;
 
-// FR-2.1 (view upcoming assignments) + FR-4.2 (surface the auto-flagged
+// FR-2.1 (view upcoming duties) + FR-4.2 (surface the auto-flagged
 // calendar conflict and let the Member jump straight into filing a formal
 // request for it, per FR-4.3/4.4).
-export default function MyAssignmentsScreen({ navigation }: Props) {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
+export default function MyDutiesScreen({ navigation }: Props) {
+  const [duties, setDuties] = useState<Duty[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,9 +21,9 @@ export default function MyAssignmentsScreen({ navigation }: Props) {
     setLoading(true);
     setError(null);
     try {
-      setAssignments(await api.assignments.listMine());
+      setDuties(await api.duties.listMine());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load assignments");
+      setError(err instanceof Error ? err.message : "Failed to load duties");
     } finally {
       setLoading(false);
     }
@@ -39,11 +39,11 @@ export default function MyAssignmentsScreen({ navigation }: Props) {
     <View style={styles.container}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <FlatList
-        data={assignments}
+        data={duties}
         keyExtractor={(item) => String(item.id)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        contentContainerStyle={assignments.length === 0 ? styles.emptyList : undefined}
-        ListEmptyComponent={!loading ? <Text style={styles.empty}>No upcoming assignments.</Text> : null}
+        contentContainerStyle={duties.length === 0 ? styles.emptyList : undefined}
+        ListEmptyComponent={!loading ? <Text style={styles.empty}>No upcoming duties.</Text> : null}
         renderItem={({ item }) => {
           const hasRequest = !!item.non_availability_request;
           return (
@@ -52,19 +52,19 @@ export default function MyAssignmentsScreen({ navigation }: Props) {
               disabled={hasRequest}
               onPress={() =>
                 navigation.navigate("NonAvailabilityRequest", {
-                  assignmentId: item.id,
-                  assignmentTitle: `${item.role_icon} ${item.role_name}`,
+                  dutyId: item.id,
+                  dutyTitle: `${item.duty_type_icon} ${item.duty_type_name}`,
                 })
               }
             >
               <View style={styles.rowText}>
                 <Text style={styles.rowTitle}>
-                  {item.role_icon} {item.role_name}
+                  {item.duty_type_icon} {item.duty_type_name}
                 </Text>
                 <Text style={styles.rowSubtitle}>{item.service_date}</Text>
                 {item.conflicts_with_calendar && !hasRequest ? (
                   <Text style={styles.conflict}>
-                    You marked this date unavailable — tap to request time off for this assignment.
+                    You marked this date unavailable — tap to request time off for this duty.
                   </Text>
                 ) : null}
                 {hasRequest ? (
