@@ -1,11 +1,12 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { avatarUrl } from "../api/avatar";
 import * as authStorage from "../api/authStorage";
 import { api } from "../api/client";
+import { DEFAULT_MEMBER_COLOR, MEMBER_COLORS } from "../api/memberColors";
 import type { RootStackParamList } from "../navigation";
+import MemberBadge from "./MemberBadge";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register"> & { onAuthenticated: () => void };
 
@@ -15,11 +16,7 @@ export default function RegisterScreen({ navigation, onAuthenticated }: Props) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // The server always sets avatar_seed = name on register (no photo
-  // involved - see FR-1.2), so the preview here mirrors that exactly
-  // rather than offering a "shuffle" that wouldn't match what gets saved.
-  const previewSeed = name.trim() || "member";
+  const [color, setColor] = useState(DEFAULT_MEMBER_COLOR);
 
   const submit = async () => {
     if (!name.trim() || !email.trim() || password.length < 8) {
@@ -29,7 +26,7 @@ export default function RegisterScreen({ navigation, onAuthenticated }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const result = await api.auth.register(name.trim(), email.trim(), password);
+      const result = await api.auth.register(name.trim(), email.trim(), password, color);
       await authStorage.setSession(result.token, result);
       onAuthenticated();
     } catch (err) {
@@ -44,11 +41,24 @@ export default function RegisterScreen({ navigation, onAuthenticated }: Props) {
       <Text style={styles.title}>Create Your Profile</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <View style={styles.avatarRow}>
-        <Image source={{ uri: avatarUrl(previewSeed) }} style={styles.avatar} />
+      <View style={styles.badgeRow}>
+        <MemberBadge name={name.trim()} color={color} size={96} />
       </View>
 
       <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
+
+      <Text style={styles.label}>Pick your color</Text>
+      <View style={styles.swatches}>
+        {MEMBER_COLORS.map((option) => (
+          <Pressable
+            key={option.hex}
+            accessibilityLabel={option.name}
+            accessibilityState={{ selected: option.hex === color }}
+            onPress={() => setColor(option.hex)}
+            style={[styles.swatch, { backgroundColor: option.hex }, option.hex === color && styles.swatchSelected]}
+          />
+        ))}
+      </View>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -77,8 +87,11 @@ export default function RegisterScreen({ navigation, onAuthenticated }: Props) {
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: "#fff", padding: 24, gap: 12, justifyContent: "center" },
   title: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
-  avatarRow: { alignItems: "center", marginBottom: 8 },
-  avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: "#eee" },
+  badgeRow: { alignItems: "center", marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  swatches: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  swatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 3, borderColor: "transparent" },
+  swatchSelected: { borderColor: "#111827" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",

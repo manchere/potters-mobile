@@ -38,7 +38,7 @@ export interface User {
   name: string;
   email: string;
   is_admin: boolean;
-  avatar_seed: string;
+  color: string;
 }
 
 export interface AuthResponse extends User {

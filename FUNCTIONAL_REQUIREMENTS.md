@@ -100,9 +100,10 @@ full spec this and FR5-FR8 below implement.
 
 **Flow**
 1. On first launch, the person taps **Need a profile? Create one** from the
-   Login screen, enters name/email/password, and submits.
-2. The server creates the account (Member role, avatar seeded from the
-   name — no photo involved) and returns a session token, which the app
+   Login screen, enters name/email/password, picks a profile color, and
+   submits.
+2. The server creates the account (Member role, shown as a circle in the
+   chosen color with their initials — no photo involved) and returns a session token, which the app
    stores and use silently on every request afterward.
 3. On later launches, a stored token skips Login entirely and lands on
    Member Home; otherwise Login is shown.

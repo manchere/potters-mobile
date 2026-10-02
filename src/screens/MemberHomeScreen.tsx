@@ -1,13 +1,13 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { avatarUrl } from "../api/avatar";
 import * as authStorage from "../api/authStorage";
 import { api } from "../api/client";
 import type { User } from "../api/types";
 import type { RootStackParamList } from "../navigation";
+import MemberBadge from "./MemberBadge";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MemberHome"> & { onLogout: () => void };
 
@@ -34,7 +34,7 @@ export default function MemberHomeScreen({ navigation, onLogout }: Props) {
     <View style={styles.container}>
       {user ? (
         <View style={styles.profile}>
-          <Image source={{ uri: avatarUrl(user.avatar_seed) }} style={styles.avatar} />
+          <MemberBadge name={user.name} color={user.color} size={80} />
           <Text style={styles.name}>{user.name}</Text>
         </View>
       ) : null}
@@ -62,7 +62,6 @@ export default function MemberHomeScreen({ navigation, onLogout }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 16, gap: 12 },
   profile: { alignItems: "center", gap: 8, marginBottom: 16 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#eee" },
   name: { fontSize: 18, fontWeight: "700" },
   menuItem: { paddingVertical: 14, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: "#ccc" },
   menuItemText: { fontSize: 15, fontWeight: "600" },
