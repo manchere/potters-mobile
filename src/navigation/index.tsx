@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { DarkTheme, DefaultTheme, NavigationContainer, useNavigation, type NavigatorScreenParams } from "@react-navigation/native";
 import { createNativeStackNavigator, type NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Duty, Song } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
@@ -76,13 +77,22 @@ const TAB_ICONS: Record<keyof TabParamList, [IconName, IconName]> = {
 function Tabs() {
   const palette = usePalette();
   const { access } = useAuth();
+  // Keep the tabs clear of the phone's home bar / browser toolbar, with a
+  // little room even on screens that report no inset.
+  const bottomPadding = Math.max(useSafeAreaInsets().bottom, 10);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: palette.surface },
         headerTitleStyle: { color: palette.strongText, fontWeight: "700" },
         headerShadowVisible: false,
-        tabBarStyle: { backgroundColor: palette.tabBar, borderTopColor: palette.border },
+        tabBarStyle: {
+          backgroundColor: palette.tabBar,
+          borderTopColor: palette.border,
+          height: 56 + bottomPadding,
+          paddingTop: 6,
+          paddingBottom: bottomPadding,
+        },
         tabBarActiveTintColor: palette.tabActive,
         tabBarInactiveTintColor: palette.tabInactive,
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },

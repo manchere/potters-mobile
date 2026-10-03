@@ -29,6 +29,16 @@
         height: 100%;
         flex: 1;
       }
+      /* On phones, 100% can reach behind the browser's bottom toolbar and
+         push the tab bar off screen; the dynamic viewport height is only
+         the part actually visible. */
+      @supports (height: 100dvh) {
+        html,
+        body,
+        #root {
+          height: 100dvh;
+        }
+      }
     </style>
   </head>
 
