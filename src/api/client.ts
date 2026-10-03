@@ -8,8 +8,25 @@ import type {
   Item,
   NonAvailabilityRequest,
   Tag,
+  User,
   VisionSuggestion,
 } from "./types";
+
+// Called when the server says the saved sign-in is no longer valid (401 on
+// a request that sent a token), so the app can return to the sign-in
+// screen instead of showing errors everywhere. Set by AuthContext.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
+// A failed request; status is the HTTP status (0 when the server couldn't
+// be reached at all).
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await authStorage.getToken();
@@ -28,13 +45,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     // Network-level failure (wrong address, server down, firewall, phone
     // on a different network) - name the URL so it's obvious what to fix.
-    throw new Error(`Can't reach the server at ${API_BASE_URL}. Check it's running and on the same network.`);
+    throw new ApiError("Can't reach Potters Portal right now. Check your internet connection and try again.", 0);
   } finally {
     clearTimeout(timeout);
   }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.error ?? `${response.status} ${response.statusText}`);
+    if (response.status === 401 && token) {
+      onUnauthorized?.();
+    }
+    throw new ApiError(body.error ?? `${response.status} ${response.statusText}`, response.status);
   }
   if (response.status === 204) {
     return undefined as T;
@@ -90,6 +110,8 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
     logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
+    // Confirms the saved token and returns the member's current profile.
+    me: () => request<User>("/api/auth/me"),
   },
   duties: {
     // Upcoming duties for the logged-in Member (as primary or

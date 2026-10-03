@@ -1,100 +1,115 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { BarcodeScanningResult } from "expo-camera";
+import { useRef, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import type { RootStackParamList } from "../navigation";
+import { radius, spacing } from "../theme";
+import { Button } from "../ui";
+import CameraWithPermission, { CameraHint } from "../ui/CameraPermission";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Scan">;
 
-// Scans a barcode/QR code and looks it up against items.barcode via
-// GET /api/items/barcode/:code. Unmatched codes offer a way to add a new
-// item instead of dead-ending.
+// FR2: scan a barcode/QR code and jump to that item. The scanner fires
+// continuously, so a code is ignored while its lookup is in flight; an
+// unknown code shows what was scanned and offers "Add as New Item" (with the
+// barcode filled in) instead of dead-ending.
 export default function ScanScreen({ navigation }: Props) {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scannedCode, setScannedCode] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "looking-up" | "not-found">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"scanning" | "looking-up" | "not-found" | "error">("scanning");
+  const [code, setCode] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const busy = useRef(false);
 
-  if (!permission) {
-    return <View style={styles.container} />;
-  }
-  if (!permission.granted) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.helperText}>Camera access is needed to scan barcodes.</Text>
-        <Pressable style={styles.primaryButton} onPress={requestPermission}>
-          <Text style={styles.primaryButtonText}>Grant Permission</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  const handleScanned = async (result: BarcodeScanningResult) => {
-    if (status === "looking-up" || scannedCode === result.data) return;
-    setScannedCode(result.data);
+  const onScanned = async (result: BarcodeScanningResult) => {
+    if (busy.current) return;
+    busy.current = true;
+    setCode(result.data);
     setStatus("looking-up");
-    setError(null);
     try {
       const item = await api.items.getByBarcode(result.data);
       navigation.replace("ItemDetail", { itemId: item.id });
     } catch (err) {
-      setStatus("not-found");
-      setError(err instanceof Error ? err.message : "Lookup failed");
+      if (err instanceof ApiError && err.status === 404) {
+        setStatus("not-found");
+      } else {
+        setStatus("error");
+        setMessage(err instanceof Error ? err.message : "Lookup failed.");
+      }
     }
   };
 
+  const scanAgain = () => {
+    setStatus("scanning");
+    setCode(null);
+    setMessage(null);
+    busy.current = false;
+  };
+
   return (
-    <View style={styles.container}>
-      <CameraView
-        style={styles.camera}
-        facing="back"
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr", "ean13", "ean8", "upc_a", "upc_e", "code128", "code39"],
-        }}
-        onBarcodeScanned={status === "looking-up" ? undefined : handleScanned}
-      />
-      <View style={styles.overlay}>
-        {status === "looking-up" ? <Text style={styles.overlayText}>Looking up {scannedCode}…</Text> : null}
-        {status === "not-found" ? (
-          <View style={styles.notFoundCard}>
-            <Text style={styles.overlayText}>No item matches "{scannedCode}".</Text>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            <Pressable
-              style={styles.primaryButton}
-              onPress={() => navigation.replace("AddItem")}
-            >
-              <Text style={styles.primaryButtonText}>Add as New Item</Text>
-            </Pressable>
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() => {
-                setScannedCode(null);
-                setStatus("idle");
-                setError(null);
-              }}
-            >
-              <Text style={styles.secondaryButtonText}>Scan Again</Text>
-            </Pressable>
-          </View>
-        ) : null}
-      </View>
-    </View>
+    <CameraWithPermission
+      reason="Point the camera at a barcode or QR code on an item to find it."
+      barcodeScannerSettings={{ barcodeTypes: ["qr", "ean13", "ean8", "upc_a", "upc_e", "code128", "code39"] }}
+      onBarcodeScanned={status === "scanning" ? onScanned : undefined}
+    >
+      <CameraHint>Point at a barcode or QR code</CameraHint>
+      <View style={styles.frame} pointerEvents="none" />
+      {status !== "scanning" ? (
+        <View style={styles.sheet}>
+          {status === "looking-up" ? (
+            <View style={styles.row}>
+              <ActivityIndicator color="#f0c75e" />
+              <Text style={styles.text}>Looking up {code}…</Text>
+            </View>
+          ) : null}
+          {status === "not-found" ? (
+            <>
+              <Text style={styles.title}>No item has this code</Text>
+              <Text style={styles.code}>{code}</Text>
+              <Button
+                title="Add as New Item"
+                icon="add"
+                onPress={() => navigation.replace("AddItem", { prefillBarcode: code ?? undefined })}
+              />
+              <Button title="Scan Again" variant="ghost" onPress={scanAgain} />
+            </>
+          ) : null}
+          {status === "error" ? (
+            <>
+              <Text style={styles.title}>Couldn't look that up</Text>
+              <Text style={styles.text}>{message}</Text>
+              <Button title="Try Again" onPress={scanAgain} />
+            </>
+          ) : null}
+        </View>
+      ) : null}
+    </CameraWithPermission>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
-  camera: { flex: 1 },
-  overlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16 },
-  overlayText: { color: "#fff", textAlign: "center", fontSize: 15, marginBottom: 8 },
-  errorText: { color: "#fca5a5", textAlign: "center", marginBottom: 8 },
-  notFoundCard: { backgroundColor: "rgba(0,0,0,0.75)", borderRadius: 12, padding: 16 },
-  helperText: { color: "#666", textAlign: "center" },
-  primaryButton: { backgroundColor: "#2563eb", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
-  primaryButtonText: { color: "#fff", fontWeight: "600" },
-  secondaryButton: { paddingVertical: 12, alignItems: "center" },
-  secondaryButtonText: { color: "#93c5fd", fontWeight: "600" },
+  frame: {
+    position: "absolute",
+    top: "28%",
+    alignSelf: "center",
+    width: "72%",
+    aspectRatio: 1.4,
+    borderWidth: 3,
+    borderColor: "#f0c75e",
+    borderRadius: radius.lg,
+  },
+  sheet: {
+    position: "absolute",
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: spacing.xxl,
+    backgroundColor: "rgba(11,26,51,0.94)",
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, justifyContent: "center" },
+  title: { color: "#fff", fontSize: 17, fontWeight: "700", textAlign: "center" },
+  code: { color: "#f0c75e", fontSize: 15, textAlign: "center", fontWeight: "600" },
+  text: { color: "#cdd5e3", fontSize: 14, textAlign: "center" },
 });

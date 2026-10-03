@@ -106,24 +106,33 @@ full spec this and FR5-FR8 below implement.
    chosen color with their initials — no photo involved) and returns a session token, which the app
    stores and use silently on every request afterward.
 3. On later launches, a stored token skips Login entirely and lands on
-   Member Home; otherwise Login is shown.
+   Member Home; otherwise Login is shown. The member stays signed in until
+   they sign out: the server extends the session on every use (180 days
+   from the last use), and the app confirms the stored token in the
+   background (`GET /api/auth/me`) without blocking Home. Only a definite
+   401 returns them to Login, with a "sign-in has expired" note; being
+   offline or the server waking up does not.
 
 **Acceptance criteria**
 - Password must be at least 8 characters (enforced client- and
   server-side).
 - A duplicate email is rejected with a clear error, not a generic failure.
-- Logging out clears the stored token and returns to Login.
+- Logging out clears the stored token and returns to Login (after a
+  confirmation); the Login screen pre-fills the last email used.
 
 **Backend dependencies**
-- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout` (new)
+- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`,
+  `GET /api/auth/me` (new)
 - `users` / `sessions` tables (new) — `database/migrations/0012`, `0013`
 
 **Status:** implemented — [LoginScreen.tsx](src/screens/LoginScreen.tsx), [RegisterScreen.tsx](src/screens/RegisterScreen.tsx)
 
 ## FR5 — View my upcoming duties
 
-**Flow:** Member Home → My Duties lists every upcoming Sunday
-duty the Member is on (as primary or support), soonest first.
+**Flow:** the Duties tab lists every upcoming Sunday duty the Member is
+on, grouped by Sunday, soonest first. Each shows whether they're serving
+or the backup, and who serves and who backs up together with their color
+badges (SCHEDULING FR-7.4). Member Home shows the next one.
 
 **Backend dependencies:** `GET /api/duties/me` (new)
 
@@ -158,7 +167,16 @@ submitted with its current status (pending/approved/denied).
 
 **Backend dependencies:** `GET /api/non-availability-requests/me` (new)
 
+Each request shows the duty and date it's about.
+
 **Status:** implemented — [MyRequestsScreen.tsx](src/screens/MyRequestsScreen.tsx)
+
+## UI
+
+The app uses the desktop app's colors (src/theme): the phone's light mode
+matches the desktop "Light" theme, dark mode matches "Navy & Gold". A
+bottom tab bar holds Home, Duties, Calendar, Inventory and Profile; dates
+read day first ("Sun 4 Oct 2026") like the desktop.
 
 ## Out of scope (for now)
 

@@ -1,12 +1,16 @@
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AuthProvider } from "./src/auth/AuthContext";
 import RootNavigator from "./src/navigation";
 
 export default function App() {
   return (
-    <>
-      <StatusBar style="auto" />
-      <RootNavigator />
-    </>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <StatusBar style="auto" />
+        <RootNavigator />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

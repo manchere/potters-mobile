@@ -1,60 +1,65 @@
-import { useCallback, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { api } from "../api/client";
 import type { NonAvailabilityRequest } from "../api/types";
+import { formatDate } from "../format";
+import { useFocusLoad } from "../hooks/useFocusLoad";
+import { spacing, usePalette } from "../theme";
+import { Banner, Card, DutyPill, EmptyState, RequestBadge } from "../ui";
 
-// FR-4.5: status of every request the Member has submitted.
+// FR8 / FR-4.5: every time-off request the member has sent, newest first,
+// with the duty it's about and its status (pending / approved / denied).
 export default function MyRequestsScreen() {
-  const [requests, setRequests] = useState<NonAvailabilityRequest[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setRequests(await api.nonAvailabilityRequests.listMine());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load requests");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
+  const palette = usePalette();
+  const { data: requests, loading, refreshing, error, refresh } = useFocusLoad<NonAvailabilityRequest[]>(
+    () => api.nonAvailabilityRequests.listMine(),
+    [],
   );
 
   return (
-    <View style={styles.container}>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <FlatList
-        data={requests}
-        keyExtractor={(item) => String(item.id)}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        contentContainerStyle={requests.length === 0 ? styles.emptyList : undefined}
-        ListEmptyComponent={!loading ? <Text style={styles.empty}>No requests submitted yet.</Text> : null}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.status}>{item.status}</Text>
-            <Text style={styles.message}>{item.message}</Text>
+    <FlatList
+      style={{ backgroundColor: palette.background }}
+      contentContainerStyle={[styles.content, requests.length === 0 && { flexGrow: 1 }]}
+      data={requests}
+      keyExtractor={(request) => String(request.id)}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.primary} />}
+      ListHeaderComponent={error ? <Banner tone="error">{error}</Banner> : null}
+      renderItem={({ item }) => (
+        <Card>
+          <View style={styles.top}>
+            {item.duty_type_name ? <DutyPill icon={item.duty_type_icon ?? ""} name={item.duty_type_name} /> : <View />}
+            <RequestBadge status={item.status} />
           </View>
-        )}
-      />
-    </View>
+          {item.service_date ? (
+            <Text style={[styles.date, { color: palette.strongText }]}>{formatDate(item.service_date)}</Text>
+          ) : null}
+          <Text style={[styles.message, { color: palette.softText }]}>“{item.message}”</Text>
+          <Text style={[styles.status, { color: palette.mutedText }]}>
+            {item.status === "pending"
+              ? "Waiting for an Admin to reply."
+              : item.status === "approved"
+                ? "Approved — you're excused from this duty."
+                : "Not approved — you're still expected to serve."}
+          </Text>
+        </Card>
+      )}
+      ListEmptyComponent={
+        loading ? null : (
+          <EmptyState
+            icon="paper-plane-outline"
+            title="No requests yet"
+            message="If you can't make a duty, open it from My Duties to ask for time off."
+          />
+        )
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  error: { color: "#dc2626", padding: 16 },
-  row: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#eee", gap: 4 },
-  status: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", color: "#2563eb" },
-  message: { fontSize: 15, color: "#333" },
-  emptyList: { flexGrow: 1, justifyContent: "center" },
-  empty: { textAlign: "center", color: "#999" },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
+  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  date: { fontSize: 15, fontWeight: "600" },
+  message: { fontSize: 15, lineHeight: 21 },
+  status: { fontSize: 13 },
 });

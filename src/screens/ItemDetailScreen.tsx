@@ -1,95 +1,80 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useLayoutEffect } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { api } from "../api/client";
 import type { Item } from "../api/types";
+import { useFocusLoad } from "../hooks/useFocusLoad";
 import type { RootStackParamList } from "../navigation";
+import { radius, spacing, usePalette } from "../theme";
+import { Banner, Card, Loading, Screen, StatusBadge, type IconName } from "../ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ItemDetail">;
 
-export default function ItemDetailScreen({ route }: Props) {
+// An item's photo and details (read-only on mobile -- editing is on the
+// desktop app).
+export default function ItemDetailScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
-  const [item, setItem] = useState<Item | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const palette = usePalette();
+  const { data: item, loading, refreshing, error, refresh } = useFocusLoad<Item | null>(() => api.items.get(itemId), null);
 
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      api.items
-        .get(itemId)
-        .then((result) => {
-          if (!cancelled) setItem(result);
-        })
-        .catch((err) => {
-          if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load item");
-        });
-      return () => {
-        cancelled = true;
-      };
-    }, [itemId]),
-  );
+  useLayoutEffect(() => {
+    if (item) navigation.setOptions({ title: item.name });
+  }, [item, navigation]);
 
-  if (error) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>{error}</Text>
-      </View>
-    );
-  }
-  if (!item) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator />
-      </View>
-    );
+  if (loading && !item) {
+    return <Loading />;
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {item.image_url ? (
-        <Image source={{ uri: api.items.imageUrl(item.id) }} style={styles.image} />
+    <Screen refreshing={refreshing} onRefresh={refresh}>
+      {error ? <Banner tone="error">{error}</Banner> : null}
+      {item ? (
+        <>
+          {item.image_url ? (
+            <Image source={{ uri: api.items.imageUrl(item.id) }} style={[styles.photo, { backgroundColor: palette.subtle }]} resizeMode="cover" />
+          ) : (
+            <View style={[styles.photo, styles.noPhoto, { backgroundColor: palette.subtle }]}>
+              <Ionicons name="image-outline" size={40} color={palette.faintText} />
+              <Text style={{ color: palette.faintText }}>No photo</Text>
+            </View>
+          )}
+          <View style={{ gap: spacing.sm }}>
+            <Text style={[styles.name, { color: palette.strongText }]}>{item.name}</Text>
+            <StatusBadge status={item.status} />
+            {item.description ? <Text style={[styles.description, { color: palette.softText }]}>{item.description}</Text> : null}
+          </View>
+          <Card style={{ padding: 0, gap: 0 }}>
+            <Detail icon="layers-outline" label="Quantity" value={String(item.quantity)} first />
+            <Detail icon="location-outline" label="Location" value={item.location || "—"} />
+            <Detail icon="barcode-outline" label="Barcode" value={item.barcode || "—"} />
+          </Card>
+        </>
       ) : null}
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.status}>{item.status}</Text>
-      {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+    </Screen>
+  );
+}
 
-      <View style={styles.row}>
-        <Text style={styles.rowLabel}>Quantity</Text>
-        <Text style={styles.rowValue}>{item.quantity}</Text>
-      </View>
-      {item.location ? (
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Location</Text>
-          <Text style={styles.rowValue}>{item.location}</Text>
-        </View>
-      ) : null}
-      {item.barcode ? (
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Barcode</Text>
-          <Text style={styles.rowValue}>{item.barcode}</Text>
-        </View>
-      ) : null}
-    </ScrollView>
+function Detail({ icon, label, value, first }: { icon: IconName; label: string; value: string; first?: boolean }) {
+  const palette = usePalette();
+  return (
+    <View style={[styles.detail, !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.divider }]}>
+      <Ionicons name={icon} size={18} color={palette.mutedText} />
+      <Text style={[styles.detailLabel, { color: palette.mutedText }]}>{label}</Text>
+      <Text style={[styles.detailValue, { color: palette.strongText }]} selectable>
+        {value}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, gap: 4 },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
-  image: { width: "100%", height: 240, borderRadius: 8, marginBottom: 12, backgroundColor: "#eee" },
-  name: { fontSize: 22, fontWeight: "700" },
-  status: { fontSize: 13, color: "#666", textTransform: "capitalize", marginBottom: 8 },
-  description: { fontSize: 15, color: "#333", marginBottom: 12 },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  rowLabel: { color: "#666" },
-  rowValue: { fontWeight: "600" },
-  error: { color: "#dc2626" },
+  photo: { width: "100%", aspectRatio: 4 / 3, borderRadius: radius.lg },
+  noPhoto: { alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  name: { fontSize: 24, fontWeight: "800" },
+  description: { fontSize: 15, lineHeight: 22 },
+  detail: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg },
+  detailLabel: { fontSize: 14, width: 80 },
+  detailValue: { flex: 1, fontSize: 15, fontWeight: "600", textAlign: "right" },
 });

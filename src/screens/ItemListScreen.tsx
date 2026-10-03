@@ -1,101 +1,150 @@
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { api } from "../api/client";
-import type { Item } from "../api/types";
-import type { RootStackParamList } from "../navigation";
+import type { Item, ItemStatus } from "../api/types";
+import { useFocusLoad } from "../hooks/useFocusLoad";
+import { useAppNavigation } from "../navigation";
+import { radius, spacing, statusColors, usePalette } from "../theme";
+import { Banner, Button, EmptyState, StatusBadge } from "../ui";
 
-type Props = NativeStackScreenProps<RootStackParamList, "ItemList">;
+const FILTERS: (ItemStatus | "all")[] = ["all", "available", "missing", "broken", "lost"];
 
-export default function ItemListScreen({ navigation }: Props) {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// The church's inventory: search by name/location/barcode, filter by status,
+// and the three ways to add or find an item -- scan a barcode (FR2),
+// identify from a photo (FR3), or add from a photo (FR1).
+export default function ItemListScreen() {
+  const navigation = useAppNavigation();
+  const palette = usePalette();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<ItemStatus | "all">("all");
+  const { data: items, loading, refreshing, error, refresh } = useFocusLoad<Item[]>(() => api.items.list(), []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setItems(await api.items.list());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load items");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = items
+    .filter((item) => filter === "all" || item.status === filter)
+    .filter((item) => {
+      const text = `${item.name} ${item.description} ${item.location} ${item.barcode ?? ""}`.toLowerCase();
+      return terms.every((term) => text.includes(term));
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <View style={styles.container}>
-      <View style={styles.actions}>
-        <Pressable style={styles.actionButton} onPress={() => navigation.navigate("Scan")}>
-          <Text style={styles.actionButtonText}>Scan Barcode</Text>
-        </Pressable>
-        <Pressable style={styles.actionButton} onPress={() => navigation.navigate("Identify")}>
-          <Text style={styles.actionButtonText}>Identify by Photo</Text>
-        </Pressable>
+    <FlatList
+      style={{ backgroundColor: palette.background }}
+      contentContainerStyle={[styles.content, shown.length === 0 && { flexGrow: 1 }]}
+      data={shown}
+      keyExtractor={(item) => String(item.id)}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.primary} />}
+      ListHeaderComponent={
+        <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
+          <View style={styles.actions}>
+            <Button title="Scan" icon="barcode-outline" variant="secondary" onPress={() => navigation.navigate("Scan")} style={styles.actionButton} />
+            <Button title="Identify" icon="search-outline" variant="secondary" onPress={() => navigation.navigate("Identify")} style={styles.actionButton} />
+            <Button title="Add" icon="add" onPress={() => navigation.navigate("AddItem")} style={styles.actionButton} />
+          </View>
+          <View style={[styles.search, { backgroundColor: palette.input, borderColor: palette.inputBorder }]}>
+            <Ionicons name="search" size={18} color={palette.faintText} />
+            <TextInput
+              style={[styles.searchInput, { color: palette.text }]}
+              placeholder="Search name, location or barcode"
+              placeholderTextColor={palette.faintText}
+              value={query}
+              onChangeText={setQuery}
+              clearButtonMode="while-editing"
+              autoCorrect={false}
+            />
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+            {FILTERS.map((option) => {
+              const active = filter === option;
+              const tint = option === "all" ? (palette.dark ? palette.accentText : palette.primary) : statusColors[option];
+              return (
+                <Pressable
+                  key={option}
+                  onPress={() => setFilter(option)}
+                  style={[
+                    styles.chip,
+                    { borderColor: active ? tint : palette.inputBorder, backgroundColor: active ? `${tint}22` : palette.surface },
+                  ]}
+                >
+                  <Text style={[styles.chipText, { color: active ? tint : palette.softText }]}>
+                    {option === "all" ? `All (${items.length})` : option.charAt(0).toUpperCase() + option.slice(1)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          {error ? <Banner tone="error">{error}</Banner> : null}
+        </View>
+      }
+      renderItem={({ item }) => (
         <Pressable
-          style={[styles.actionButton, styles.actionButtonPrimary]}
-          onPress={() => navigation.navigate("AddItem")}
+          onPress={() => navigation.navigate("ItemDetail", { itemId: item.id })}
+          style={({ pressed }) => [
+            styles.row,
+            { backgroundColor: pressed ? palette.subtle : palette.surface, borderColor: palette.border },
+          ]}
         >
-          <Text style={styles.actionButtonTextPrimary}>+ Add Item</Text>
-        </Pressable>
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <FlatList
-        data={items}
-        keyExtractor={(item) => String(item.id)}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        contentContainerStyle={items.length === 0 ? styles.emptyList : undefined}
-        ListEmptyComponent={!loading ? <Text style={styles.empty}>No items yet.</Text> : null}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.row}
-            onPress={() => navigation.navigate("ItemDetail", { itemId: item.id })}
-          >
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>{item.name}</Text>
-              <Text style={styles.rowSubtitle}>
-                Qty {item.quantity} · {item.status}
-                {item.location ? ` · ${item.location}` : ""}
-              </Text>
+          {item.image_url ? (
+            <Image source={{ uri: api.items.imageUrl(item.id) }} style={[styles.thumb, { backgroundColor: palette.subtle }]} />
+          ) : (
+            <View style={[styles.thumb, styles.noPhoto, { backgroundColor: palette.subtle }]}>
+              <Ionicons name="cube-outline" size={24} color={palette.faintText} />
             </View>
-          </Pressable>
-        )}
-      />
-    </View>
+          )}
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={[styles.name, { color: palette.strongText }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={{ color: palette.mutedText, fontSize: 13 }} numberOfLines={1}>
+              Qty {item.quantity}
+              {item.location ? ` · ${item.location}` : ""}
+            </Text>
+            <StatusBadge status={item.status} />
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={palette.faintText} />
+        </Pressable>
+      )}
+      ListEmptyComponent={
+        loading ? null : (
+          <EmptyState
+            icon="cube-outline"
+            title={items.length === 0 ? "No items yet" : "Nothing matches"}
+            message={items.length === 0 ? "Add the first item by taking a photo of it." : "Try a different search or status."}
+          />
+        )
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  actions: { flexDirection: "row", gap: 8, padding: 16 },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ccc",
+  content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl },
+  actions: { flexDirection: "row", gap: spacing.sm },
+  actionButton: { flex: 1, paddingHorizontal: spacing.sm },
+  search: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
   },
-  actionButtonPrimary: { backgroundColor: "#2563eb", borderColor: "#2563eb" },
-  actionButtonText: { fontWeight: "600", color: "#111", fontSize: 13, textAlign: "center" },
-  actionButtonTextPrimary: { fontWeight: "600", color: "#fff", fontSize: 13, textAlign: "center" },
-  error: { color: "#dc2626", paddingHorizontal: 16, paddingBottom: 8 },
-  row: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  rowText: { gap: 4 },
-  rowTitle: { fontSize: 16, fontWeight: "600" },
-  rowSubtitle: { fontSize: 13, color: "#666" },
-  emptyList: { flexGrow: 1, justifyContent: "center" },
-  empty: { textAlign: "center", color: "#999" },
+  searchInput: { flex: 1, paddingVertical: 11, fontSize: 15 },
+  chip: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 7 },
+  chipText: { fontSize: 13, fontWeight: "600" },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  thumb: { width: 60, height: 60, borderRadius: radius.md },
+  noPhoto: { alignItems: "center", justifyContent: "center" },
+  name: { fontSize: 15, fontWeight: "700" },
 });

@@ -1,24 +1,28 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
 
 import { api } from "../api/client";
+import { formatDate } from "../format";
 import type { RootStackParamList } from "../navigation";
+import { spacing, usePalette } from "../theme";
+import { Banner, Button, Card, Screen, TextField } from "../ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "NonAvailabilityRequest">;
 
-// FR-4.3/4.4: a message is required before this can be submitted; the
-// backend also enforces FR-4.1 (the duty must actually be the
-// Member's) and always inserts as pending (FR-4.4/FR-5).
+// FR7 / FR-4.3/4.4: ask for time off from one duty. A reason is required;
+// the server checks the duty is really the member's (FR-4.1) and files it
+// as pending for an Admin to approve or deny.
 export default function NonAvailabilityRequestScreen({ route, navigation }: Props) {
-  const { dutyId, dutyTitle } = route.params;
+  const { dutyId, dutyTitle, serviceDate } = route.params;
+  const palette = usePalette();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
     if (!message.trim()) {
-      setError("Please explain why you can't make it.");
+      setError("Please say why you can't make it.");
       return;
     }
     setSubmitting(true);
@@ -27,45 +31,39 @@ export default function NonAvailabilityRequestScreen({ route, navigation }: Prop
       await api.nonAvailabilityRequests.create(dutyId, message.trim());
       navigation.goBack();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit request");
+      setError(err instanceof Error ? err.message : "Couldn't send your request.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Request time off — {dutyTitle}</Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TextInput
-        style={styles.textArea}
-        placeholder="Explain why you can't make this duty"
-        multiline
-        numberOfLines={5}
-        value={message}
-        onChangeText={setMessage}
-      />
-      <Pressable style={[styles.button, submitting && styles.buttonDisabled]} onPress={submit} disabled={submitting}>
-        <Text style={styles.buttonText}>{submitting ? "Submitting..." : "Submit Request"}</Text>
-      </Pressable>
-    </View>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <Screen>
+        <Card>
+          <Text style={[styles.duty, { color: palette.strongText }]}>{dutyTitle}</Text>
+          <Text style={{ color: palette.mutedText, fontSize: 15 }}>{formatDate(serviceDate)}</Text>
+        </Card>
+        <Banner tone="info">An Admin will see your reason and approve or decline. You can follow it under My Requests.</Banner>
+        <TextField
+          label="Why can't you make it?"
+          placeholder="e.g. I'll be travelling that weekend."
+          multiline
+          value={message}
+          onChangeText={(text) => {
+            setMessage(text);
+            if (error) setError(null);
+          }}
+          error={error}
+          autoFocus
+        />
+        <Button title="Send Request" icon="paper-plane" onPress={submit} loading={submitting} style={{ marginTop: spacing.sm }} />
+        <Button title="Cancel" variant="ghost" onPress={() => navigation.goBack()} />
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16, gap: 12 },
-  title: { fontSize: 18, fontWeight: "700" },
-  textArea: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-    minHeight: 120,
-    textAlignVertical: "top",
-  },
-  button: { backgroundColor: "#2563eb", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontWeight: "600", fontSize: 15 },
-  error: { color: "#dc2626" },
+  duty: { fontSize: 18, fontWeight: "700" },
 });

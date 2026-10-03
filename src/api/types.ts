@@ -55,6 +55,10 @@ export interface NonAvailabilityRequest {
   status: NonAvailabilityStatus;
   decided_by: number | null;
   decided_at: string | null;
+  // Only on GET /api/non-availability-requests/me: the duty it's about.
+  duty_type_name?: string;
+  duty_type_icon?: string;
+  service_date?: string; // "YYYY-MM-DD"
 }
 
 export interface Duty {
@@ -72,6 +76,12 @@ export interface Duty {
   notes: string;
   // Only present on GET /api/duties/me.
   conflicts_with_calendar?: boolean;
+  // Who serves and who backs up (FR-7.4), and which of the two "me" is.
+  member_name?: string | null;
+  member_color?: string | null;
+  support_member_name?: string | null;
+  support_member_color?: string | null;
+  role?: "serving" | "backup";
   non_availability_request?: NonAvailabilityRequest | null;
 }
 
@@ -80,3 +90,4 @@ export interface AvailabilityMark {
   user_id: number;
   date: string; // "YYYY-MM-DD"
 }
+
