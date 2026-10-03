@@ -91,6 +91,18 @@ cloudflared tunnel --url http://localhost:8080     # prints an https URL
 Put that URL in `mobile/.env` as `EXPO_PUBLIC_API_URL=...`, then run
 `npm run start:tunnel`. Restart Metro after editing `.env`.
 
+### In a browser, without Expo Go
+
+`npm run build:web` builds the app as a website in `dist/`. Hosted as a
+Render Static Site (see `render.yaml` in the parent repo), members open its
+link in the phone's browser and use **Add to Home Screen** for an icon that
+opens it full-screen, like an installed app (`public/manifest.json`,
+`public/index.html`). Neither Expo Go nor the computer has to be on.
+
+`EXPO_PUBLIC_API_URL` is built into the site, so set it in the Static
+Site's environment on Render (e.g. `https://potters-portal-api.onrender.com`)
+and redeploy after changing it.
+
 ### Troubleshooting
 
 - **"Can't reach the server at ..."**: the server isn't running, the

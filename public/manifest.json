@@ -1,0 +1,13 @@
+{
+  "name": "Potters Portal",
+  "short_name": "Potters Portal",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1a33",
+  "theme_color": "#0b1a33",
+  "icons": [
+    { "src": "/icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}
