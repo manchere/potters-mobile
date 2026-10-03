@@ -91,3 +91,89 @@ export interface AvailabilityMark {
   date: string; // "YYYY-MM-DD"
 }
 
+// GET /api/schedule/<date>: one Sunday's line-up. editable is false once
+// the Sunday has passed (nobody can change it then).
+export interface ScheduleDay {
+  date: string; // "YYYY-MM-DD"
+  editable: boolean;
+  duties: Duty[];
+}
+
+export interface DutyType {
+  id: number;
+  name: string;
+  icon: string;
+}
+
+// GET /api/members: just enough to pick someone and show their badge.
+export interface Member {
+  id: number;
+  name: string;
+  color: string;
+}
+
+// The body for adding or changing a duty (Admins only). Changing keeps the
+// duty and its Sunday; only who serves, the backup and the notes change.
+export interface DutyInput {
+  duty_type_id: number;
+  service_date: string;
+  member_id: number | null;
+  support_member_id: number | null;
+  notes: string;
+}
+
+// One duty in a schedule report (desktop Reports tab).
+export interface ReportRow {
+  duty_id: number;
+  service_date: string;
+  duty_type_name: string;
+  duty_type_icon: string;
+  member_id: number | null;
+  member_name: string | null;
+  support_member_id: number | null;
+  support_member_name: string | null;
+  notes: string;
+  // Only the status of a time-off request -- never the reason.
+  request_status: NonAvailabilityStatus | null;
+  member_marked_unavailable: boolean;
+}
+
+export interface Song {
+  id: number;
+  title: string;
+  artist: string;
+  song_key: string;
+  link: string;
+  lyrics: string;
+}
+
+export type FeedbackKind = "bug" | "feature" | "profile";
+
+export interface Feedback {
+  id: number;
+  kind: FeedbackKind;
+  member_id: number | null;
+  member_name?: string | null;
+  subject: string;
+  details: string;
+  done: boolean;
+  created_at: string | null;
+}
+
+// What the member may do in one section, as set by an Admin in the desktop
+// app's Settings > Access Rights.
+export interface SectionAccess {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
+export type SectionKey = "reports" | "songs" | "inventory" | "taxonomy" | "feedback" | "settings";
+
+export interface Access {
+  is_admin: boolean;
+  // The schedule has no access rule of its own: only Admins change it.
+  can_manage_schedule: boolean;
+  sections: Record<SectionKey, SectionAccess>;
+}

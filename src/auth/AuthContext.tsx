@@ -2,17 +2,26 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import * as authStorage from "../api/authStorage";
 import { api, ApiError, setUnauthorizedHandler } from "../api/client";
-import type { User } from "../api/types";
+import type { Access, User } from "../api/types";
+import { defaultAccess } from "./access";
 
 type AuthState = {
   // "loading" only while the saved sign-in is read at launch.
   status: "loading" | "signedOut" | "signedIn";
   user: User | null;
+  // What the signed-in member may do (Settings > Access Rights on the
+  // desktop): which screens and buttons the app shows.
+  access: Access;
+  // No one has ever signed in on this phone: open on Create Profile.
+  firstLaunch: boolean;
   // Why the member was signed out, shown once on the sign-in screen.
   notice: string | null;
   signIn: (token: string, user: User) => Promise<void>;
   signOut: (notice?: string) => Promise<void>;
   updateUser: (user: User) => void;
+  // Re-reads access rights -- an Admin may have changed them, or they
+  // follow the duties on the coming Sunday.
+  refreshAccess: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -25,11 +34,24 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthState["status"]>("loading");
   const [user, setUser] = useState<User | null>(null);
+  const [access, setAccess] = useState<Access>(defaultAccess(false));
+  const [firstLaunch, setFirstLaunch] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const refreshAccess = useCallback(async () => {
+    try {
+      const fresh = await api.access.mine();
+      setAccess(fresh);
+      await authStorage.setAccess(fresh);
+    } catch {
+      // Offline or server asleep: keep what we have.
+    }
+  }, []);
 
   const signOut = useCallback(async (reason?: string) => {
     await authStorage.clearSession();
     setUser(null);
+    setAccess(defaultAccess(false));
     setNotice(reason ?? null);
     setStatus("signedOut");
   }, []);
@@ -37,9 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (token: string, signedIn: User) => {
     await authStorage.setSession(token, signedIn);
     setUser(signedIn);
+    setAccess(defaultAccess(signedIn.is_admin));
     setNotice(null);
+    setFirstLaunch(false);
     setStatus("signedIn");
-  }, []);
+    refreshAccess();
+  }, [refreshAccess]);
 
   const updateUser = useCallback((updated: User) => {
     setUser(updated);
@@ -55,13 +80,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [token, cached] = await Promise.all([authStorage.getToken(), authStorage.getUser()]);
+      const [token, cached, cachedAccess, lastEmail] = await Promise.all([
+        authStorage.getToken(),
+        authStorage.getUser(),
+        authStorage.getAccess(),
+        authStorage.getLastEmail(),
+      ]);
       if (!token) {
+        setFirstLaunch(!lastEmail);
         setStatus("signedOut");
         return;
       }
       setUser(cached);
+      setAccess(cachedAccess ?? defaultAccess(cached?.is_admin ?? false));
       setStatus("signedIn");
+      refreshAccess();
       try {
         updateUser(await api.auth.me());
       } catch (err) {
@@ -72,11 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     })();
-  }, [updateUser]);
+  }, [updateUser, refreshAccess]);
 
   const value = useMemo(
-    () => ({ status, user, notice, signIn, signOut, updateUser }),
-    [status, user, notice, signIn, signOut, updateUser],
+    () => ({ status, user, access, firstLaunch, notice, signIn, signOut, updateUser, refreshAccess }),
+    [status, user, access, firstLaunch, notice, signIn, signOut, updateUser, refreshAccess],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -99,9 +99,10 @@ later visits. See `SCHEDULING_FUNCTIONAL_REQUIREMENTS.md` FR-0, FR-1 for the
 full spec this and FR5-FR8 below implement.
 
 **Flow**
-1. On first launch, the person taps **Need a profile? Create one** from the
-   Login screen, enters name/email/password, picks a profile color, and
-   submits.
+1. On a phone no one has signed in on yet, the app opens on Create
+   Profile (later, it's **New here? Create your profile** on the Login
+   screen). The person enters name/email/password, picks a profile color,
+   and submits.
 2. The server creates the account (Member role, shown as a circle in the
    chosen color with their initials — no photo involved) and returns a session token, which the app
    stores and use silently on every request afterward.
@@ -140,8 +141,10 @@ badges (SCHEDULING FR-7.4). Member Home shows the next one.
 
 ## FR6 — Mark general availability
 
-**Flow:** Member Home → Availability Calendar → tap a date to toggle it as
-a day the Member expects not to be at church. Informational only — no
+**Flow:** Member Home → Away tab → tap a Sunday to toggle it as a day the
+Member expects not to be at church. Only Sundays are shown (one tile per
+Sunday, a month at a time), since duties only happen on Sundays; past
+Sundays can't be changed. Informational only — no
 message, no approval (that's FR7, and only once a duty actually
 collides with a marked date).
 
@@ -171,11 +174,52 @@ Each request shows the duty and date it's about.
 
 **Status:** implemented — [MyRequestsScreen.tsx](src/screens/MyRequestsScreen.tsx)
 
+## FR9 — See the Sunday schedule
+
+**Flow:** Schedule tab → everyone serving on a Sunday (duty, who serves,
+backup, notes), a week at a time; the member's own duties are marked.
+Admins can add a duty on an upcoming Sunday, or tap one to change who
+serves, the backup and the notes, or remove it. Past Sundays are
+read-only for everyone.
+
+**Backend dependencies:** `GET /api/schedule/:date`, `GET /api/duty-types`,
+`GET /api/members`, `POST /api/duties`, `PUT/DELETE /api/duties/:id`
+(Admins only) (new)
+
+**Status:** implemented — [ScheduleScreen.tsx](src/screens/ScheduleScreen.tsx), [DutyEditScreen.tsx](src/screens/DutyEditScreen.tsx)
+
+## FR10 — Schedule reports, songs and feedback
+
+- **Reports:** who did what on past Sundays (last month / 3 months /
+  year), filterable by member or duty, with the same availability tags as
+  the desktop report. Shareable as text with the Reports "create" right.
+- **Songs:** the song library with key, play link and lyrics; add, edit
+  and delete follow the Songs rights.
+- **Feedback:** send a problem, an idea or a profile change (Feedback
+  "create"); with "update"/"delete", see everyone's requests and mark
+  them done or delete them.
+
+**Backend dependencies:** `GET /api/reports/schedule`, `GET/POST /api/songs`,
+`PUT/DELETE /api/songs/:id`, `GET/POST /api/feedback`,
+`PATCH/DELETE /api/feedback/:id` (new)
+
+**Status:** implemented — [ReportsScreen.tsx](src/screens/ReportsScreen.tsx), [SongsScreen.tsx](src/screens/SongsScreen.tsx), [FeedbackScreen.tsx](src/screens/FeedbackScreen.tsx)
+
+## Access rights
+
+What each member sees follows the desktop's Settings > Access Rights
+(`GET /api/access/me`, cached on the phone): Reports, Songs and Feedback
+appear only with "view" (Feedback: with any right), and each add / edit /
+change-status / delete button only with the matching right — including
+Inventory. The server checks the same rights on every change. Schedule
+changes are for Admins only, as on the desktop.
+
 ## UI
 
 The app uses the desktop app's colors (src/theme): the phone's light mode
 matches the desktop "Light" theme, dark mode matches "Navy & Gold". A
-bottom tab bar holds Home, Duties, Calendar, Inventory and Profile; dates
+bottom tab bar holds Home, Schedule, Away, Inventory (with Inventory
+"view") and Profile; My Duties opens from Home and Profile; dates
 read day first ("Sun 4 Oct 2026") like the desktop.
 
 ## Out of scope (for now)

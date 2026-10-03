@@ -5,6 +5,7 @@ import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 
 import { api } from "../api/client";
 import type { Item } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
 import type { RootStackParamList } from "../navigation";
 import { radius, spacing, usePalette } from "../theme";
 import { Banner, Button, Card, Divider, ListRow, Screen, SectionTitle, StatusBadge } from "../ui";
@@ -27,6 +28,7 @@ function matchScore(suggestedName: string, item: Item): number {
 
 export default function IdentifyScreen({ navigation }: Props) {
   const palette = usePalette();
+  const { access } = useAuth();
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [status, setStatus] = useState<"analyzing" | "done">("analyzing");
   const [suggestedName, setSuggestedName] = useState("");
@@ -108,18 +110,20 @@ export default function IdentifyScreen({ navigation }: Props) {
           ) : (
             <Text style={{ color: palette.mutedText }}>Nothing in the inventory looks like this yet.</Text>
           )}
-          <Button
-            title="Not Listed — Add as New Item"
-            icon="add"
-            onPress={() =>
-              navigation.replace("AddItem", {
-                prefillImageBase64: photoBase64,
-                prefillName: suggestedName,
-                prefillDescription: suggestedDescription,
-              })
-            }
-            style={{ marginTop: spacing.sm }}
-          />
+          {access.sections.inventory.create ? (
+            <Button
+              title="Not Listed — Add as New Item"
+              icon="add"
+              onPress={() =>
+                navigation.replace("AddItem", {
+                  prefillImageBase64: photoBase64,
+                  prefillName: suggestedName,
+                  prefillDescription: suggestedDescription,
+                })
+              }
+              style={{ marginTop: spacing.sm }}
+            />
+          ) : null}
           <Button title="Retake Photo" variant="ghost" onPress={() => setPhotoBase64(null)} />
         </>
       )}

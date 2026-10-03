@@ -1,12 +1,21 @@
 import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
 import * as authStorage from "./authStorage";
 import type {
+  Access,
   Duty,
+  DutyInput,
+  DutyType,
   AuthResponse,
   AvailabilityMark,
   Category,
+  Feedback,
+  FeedbackKind,
   Item,
+  Member,
   NonAvailabilityRequest,
+  ReportRow,
+  ScheduleDay,
+  Song,
   Tag,
   User,
   VisionSuggestion,
@@ -117,6 +126,44 @@ export const api = {
     // Upcoming duties for the logged-in Member (as primary or
     // support), each flagged with conflicts_with_calendar per FR-4.2.
     listMine: () => request<Duty[]>("/api/duties/me"),
+    // Admins only (the server refuses anyone else, and any past Sunday).
+    create: (duty: DutyInput) => request<Duty>("/api/duties", { method: "POST", body: JSON.stringify(duty) }),
+    update: (id: number, duty: DutyInput) =>
+      request<Duty>(`/api/duties/${id}`, { method: "PUT", body: JSON.stringify(duty) }),
+    remove: (id: number) => request<{ ok: boolean }>(`/api/duties/${id}`, { method: "DELETE" }),
+  },
+  schedule: {
+    // Everyone serving on one Sunday ("YYYY-MM-DD").
+    forDate: (date: string) => request<ScheduleDay>(`/api/schedule/${date}`),
+  },
+  dutyTypes: {
+    list: () => request<DutyType[]>("/api/duty-types"),
+  },
+  members: {
+    list: () => request<Member[]>("/api/members"),
+  },
+  access: {
+    mine: () => request<Access>("/api/access/me"),
+  },
+  reports: {
+    // Newest Sunday first.
+    schedule: (from: string, to: string) => request<ReportRow[]>(`/api/reports/schedule?from=${from}&to=${to}`),
+  },
+  songs: {
+    list: () => request<Song[]>("/api/songs"),
+    create: (song: Omit<Song, "id">) => request<Song>("/api/songs", { method: "POST", body: JSON.stringify(song) }),
+    update: (id: number, song: Omit<Song, "id">) =>
+      request<Song>(`/api/songs/${id}`, { method: "PUT", body: JSON.stringify(song) }),
+    remove: (id: number) => request<{ ok: boolean }>(`/api/songs/${id}`, { method: "DELETE" }),
+  },
+  feedback: {
+    send: (kind: FeedbackKind, subject: string, details: string) =>
+      request<Feedback>("/api/feedback", { method: "POST", body: JSON.stringify({ kind, subject, details }) }),
+    // Everyone's requests -- needs Feedback "update" or "delete".
+    list: () => request<Feedback[]>("/api/feedback"),
+    setDone: (id: number, done: boolean) =>
+      request<{ ok: boolean }>(`/api/feedback/${id}`, { method: "PATCH", body: JSON.stringify({ done }) }),
+    remove: (id: number) => request<{ ok: boolean }>(`/api/feedback/${id}`, { method: "DELETE" }),
   },
   availability: {
     list: () => request<AvailabilityMark[]>("/api/availability"),

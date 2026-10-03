@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-import type { User } from "./types";
+import type { Access, User } from "./types";
 
 // The session token and the signed-in member, kept on the device so the app
 // opens straight to Home on later launches (FR4). There's no
@@ -12,7 +12,11 @@ import type { User } from "./types";
 // web build, which has no secure store, uses the browser's localStorage.
 const TOKEN_KEY = "potters_portal_auth_token";
 const USER_KEY = "potters_portal_auth_user";
-// Pre-fills the sign-in form after signing out.
+// What the member may do, so the right screens and buttons show at launch
+// even before the server answers (or when it can't be reached).
+const ACCESS_KEY = "potters_portal_access";
+// Pre-fills the sign-in form after signing out; also tells a first launch
+// (never signed in on this phone) from a later one.
 const LAST_EMAIL_KEY = "potters_portal_last_email";
 
 const isWeb = Platform.OS === "web";
@@ -73,6 +77,20 @@ export async function setUser(user: User): Promise<void> {
 export async function clearSession(): Promise<void> {
   await remove(TOKEN_KEY);
   await remove(USER_KEY);
+  await remove(ACCESS_KEY);
+}
+
+export async function getAccess(): Promise<Access | null> {
+  const raw = await read(ACCESS_KEY);
+  try {
+    return raw ? (JSON.parse(raw) as Access) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setAccess(access: Access): Promise<void> {
+  await write(ACCESS_KEY, JSON.stringify(access));
 }
 
 export function getLastEmail(): Promise<string | null> {

@@ -12,7 +12,7 @@ import { Badge, Button, Card, Divider, ListRow, MemberBadge, Screen, SectionTitl
 // saved sign-in (FR4: it otherwise lasts across launches).
 export default function ProfileScreen() {
   const navigation = useAppNavigation();
-  const { user, signOut } = useAuth();
+  const { user, access, signOut } = useAuth();
   const palette = usePalette();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -50,11 +50,34 @@ export default function ProfileScreen() {
 
       <SectionTitle>My schedule</SectionTitle>
       <Card style={{ padding: 0, gap: 0 }}>
-        <ListRow icon="calendar-number-outline" title="My duties" onPress={() => navigation.navigate("Tabs", { screen: "Duties" })} />
+        <ListRow icon="calendar-number-outline" title="My duties" onPress={() => navigation.navigate("MyDuties")} />
         <Divider />
-        <ListRow icon="calendar-clear-outline" title="Days I'll be away" onPress={() => navigation.navigate("Tabs", { screen: "Calendar" })} />
+        <ListRow icon="calendar-clear-outline" title="Sundays I'll be away" onPress={() => navigation.navigate("Tabs", { screen: "Calendar" })} />
         <Divider />
         <ListRow icon="paper-plane-outline" title="My time-off requests" onPress={() => navigation.navigate("MyRequests")} />
+      </Card>
+
+      <SectionTitle>Church</SectionTitle>
+      <Card style={{ padding: 0, gap: 0 }}>
+        <ListRow icon="people-outline" title="Schedule" onPress={() => navigation.navigate("Tabs", { screen: "Schedule" })} />
+        {access.sections.reports.view ? (
+          <>
+            <Divider />
+            <ListRow icon="document-text-outline" title="Reports" onPress={() => navigation.navigate("Reports")} />
+          </>
+        ) : null}
+        {access.sections.songs.view ? (
+          <>
+            <Divider />
+            <ListRow icon="musical-notes-outline" title="Songs" onPress={() => navigation.navigate("Songs")} />
+          </>
+        ) : null}
+        {access.sections.feedback.create || access.sections.feedback.update || access.sections.feedback.delete ? (
+          <>
+            <Divider />
+            <ListRow icon="chatbubble-ellipses-outline" title="Feedback" onPress={() => navigation.navigate("Feedback")} />
+          </>
+        ) : null}
       </Card>
 
       <SectionTitle>About</SectionTitle>

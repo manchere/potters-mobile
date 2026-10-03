@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { api, ApiError } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import type { RootStackParamList } from "../navigation";
 import { radius, spacing } from "../theme";
 import { Button } from "../ui";
@@ -16,6 +17,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Scan">;
 // unknown code shows what was scanned and offers "Add as New Item" (with the
 // barcode filled in) instead of dead-ending.
 export default function ScanScreen({ navigation }: Props) {
+  const { access } = useAuth();
   const [status, setStatus] = useState<"scanning" | "looking-up" | "not-found" | "error">("scanning");
   const [code, setCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -66,11 +68,13 @@ export default function ScanScreen({ navigation }: Props) {
             <>
               <Text style={styles.title}>No item has this code</Text>
               <Text style={styles.code}>{code}</Text>
-              <Button
-                title="Add as New Item"
-                icon="add"
-                onPress={() => navigation.replace("AddItem", { prefillBarcode: code ?? undefined })}
-              />
+              {access.sections.inventory.create ? (
+                <Button
+                  title="Add as New Item"
+                  icon="add"
+                  onPress={() => navigation.replace("AddItem", { prefillBarcode: code ?? undefined })}
+                />
+              ) : null}
               <Button title="Scan Again" variant="ghost" onPress={scanAgain} />
             </>
           ) : null}

@@ -1,23 +1,57 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useLayoutEffect } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useLayoutEffect, useState } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { api } from "../api/client";
-import type { Item } from "../api/types";
+import type { Item, ItemStatus } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
 import { useFocusLoad } from "../hooks/useFocusLoad";
 import type { RootStackParamList } from "../navigation";
-import { radius, spacing, usePalette } from "../theme";
-import { Banner, Card, Loading, Screen, StatusBadge, type IconName } from "../ui";
+import { radius, spacing, statusColors, usePalette } from "../theme";
+import { Banner, Button, Card, Loading, Screen, SectionTitle, StatusBadge, type IconName } from "../ui";
+import { confirmAction } from "../ui/confirm";
+
+const STATUSES: ItemStatus[] = ["available", "missing", "broken", "lost"];
 
 type Props = NativeStackScreenProps<RootStackParamList, "ItemDetail">;
 
-// An item's photo and details (read-only on mobile -- editing is on the
-// desktop app).
+// An item's photo and details. Members with the Inventory "update" right
+// can change its status (e.g. mark it missing), and those with "delete" can
+// remove it; full editing stays on the desktop app.
 export default function ItemDetailScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
   const palette = usePalette();
-  const { data: item, loading, refreshing, error, refresh } = useFocusLoad<Item | null>(() => api.items.get(itemId), null);
+  const { access } = useAuth();
+  const rights = access.sections.inventory;
+  const { data: item, setData, loading, refreshing, error, refresh } = useFocusLoad<Item | null>(() => api.items.get(itemId), null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  const setStatus = async (status: ItemStatus) => {
+    if (!item || item.status === status) return;
+    setActionError(null);
+    setData({ ...item, status });
+    try {
+      setData(await api.items.setStatus(item.id, status));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Couldn't change the status.");
+      refresh();
+    }
+  };
+
+  const remove = async () => {
+    if (!item) return;
+    if (!(await confirmAction("Delete this item?", `"${item.name}" will be removed from the inventory.`, "Delete"))) return;
+    setRemoving(true);
+    try {
+      await api.items.remove(item.id);
+      navigation.goBack();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Couldn't delete the item.");
+      setRemoving(false);
+    }
+  };
 
   useLayoutEffect(() => {
     if (item) navigation.setOptions({ title: item.name });
@@ -30,6 +64,7 @@ export default function ItemDetailScreen({ route, navigation }: Props) {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
       {error ? <Banner tone="error">{error}</Banner> : null}
+      {actionError ? <Banner tone="error">{actionError}</Banner> : null}
       {item ? (
         <>
           {item.image_url ? (
@@ -50,6 +85,36 @@ export default function ItemDetailScreen({ route, navigation }: Props) {
             <Detail icon="location-outline" label="Location" value={item.location || "—"} />
             <Detail icon="barcode-outline" label="Barcode" value={item.barcode || "—"} />
           </Card>
+          {rights.update ? (
+            <>
+              <SectionTitle>Change status</SectionTitle>
+              <View style={styles.statuses}>
+                {STATUSES.map((status) => {
+                  const active = item.status === status;
+                  const color = statusColors[status];
+                  return (
+                    <Pressable
+                      key={status}
+                      onPress={() => setStatus(status)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                      style={[
+                        styles.status,
+                        { borderColor: active ? color : palette.inputBorder, backgroundColor: active ? `${color}22` : palette.surface },
+                      ]}
+                    >
+                      <Text style={[styles.statusText, { color: active ? color : palette.softText }]}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
+          {rights.delete ? (
+            <Button title="Delete Item" icon="trash-outline" variant="danger" onPress={remove} loading={removing} />
+          ) : null}
         </>
       ) : null}
     </Screen>
@@ -77,4 +142,7 @@ const styles = StyleSheet.create({
   detail: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg },
   detailLabel: { fontSize: 14, width: 80 },
   detailValue: { flex: 1, fontSize: 15, fontWeight: "600", textAlign: "right" },
+  statuses: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  status: { borderWidth: 1.5, borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 8 },
+  statusText: { fontSize: 14, fontWeight: "700" },
 });

@@ -48,3 +48,36 @@ export function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
+export const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Today if it's Sunday, else the coming Sunday -- the one the schedule
+// opens on.
+export function upcomingSunday(today = new Date()): Date {
+  const date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  date.setDate(date.getDate() + ((7 - date.getDay()) % 7));
+  return date;
+}
+
+export function addDays(date: Date, days: number): Date {
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+// Every Sunday in a month (month is 0-11), as "YYYY-MM-DD".
+export function sundaysInMonth(year: number, month: number): string[] {
+  const first = new Date(year, month, 1);
+  const sundays: string[] = [];
+  for (let date = addDays(first, (7 - first.getDay()) % 7); date.getMonth() === month; date = addDays(date, 7)) {
+    sundays.push(toIsoDate(date));
+  }
+  return sundays;
+}
+
+// "YYYY-MM-DD" a number of months before today, for report ranges.
+export function monthsAgo(months: number, today = new Date()): string {
+  return toIsoDate(new Date(today.getFullYear(), today.getMonth() - months, today.getDate()));
+}

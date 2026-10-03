@@ -4,6 +4,7 @@ import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Tex
 
 import { api } from "../api/client";
 import type { Item, ItemStatus } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
 import { useFocusLoad } from "../hooks/useFocusLoad";
 import { useAppNavigation } from "../navigation";
 import { radius, spacing, statusColors, usePalette } from "../theme";
@@ -17,6 +18,7 @@ const FILTERS: (ItemStatus | "all")[] = ["all", "available", "missing", "broken"
 export default function ItemListScreen() {
   const navigation = useAppNavigation();
   const palette = usePalette();
+  const { access } = useAuth();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ItemStatus | "all">("all");
   const { data: items, loading, refreshing, error, refresh } = useFocusLoad<Item[]>(() => api.items.list(), []);
@@ -43,7 +45,9 @@ export default function ItemListScreen() {
           <View style={styles.actions}>
             <Button title="Scan" icon="barcode-outline" variant="secondary" onPress={() => navigation.navigate("Scan")} style={styles.actionButton} />
             <Button title="Identify" icon="search-outline" variant="secondary" onPress={() => navigation.navigate("Identify")} style={styles.actionButton} />
-            <Button title="Add" icon="add" onPress={() => navigation.navigate("AddItem")} style={styles.actionButton} />
+            {access.sections.inventory.create ? (
+              <Button title="Add" icon="add" onPress={() => navigation.navigate("AddItem")} style={styles.actionButton} />
+            ) : null}
           </View>
           <View style={[styles.search, { backgroundColor: palette.input, borderColor: palette.inputBorder }]}>
             <Ionicons name="search" size={18} color={palette.faintText} />

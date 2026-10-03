@@ -97,7 +97,7 @@ export default function RegisterScreen() {
           <Button title="Create Profile" onPress={submit} loading={loading} style={{ marginTop: spacing.sm }} />
         </Card>
 
-        <Button title="Already have a profile? Sign in" variant="ghost" onPress={() => navigation.goBack()} />
+        <Button title="Already have a profile? Sign in" variant="ghost" onPress={() => navigation.navigate("Login")} />
       </Screen>
     </KeyboardAvoidingView>
   );
