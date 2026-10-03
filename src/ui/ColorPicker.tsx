@@ -18,9 +18,9 @@ import { hexToHsv, hsvToHex, isHexColor, MEMBER_COLORS, textColorFor } from "../
 import { radius, spacing, usePalette } from "../theme";
 import { Button, MemberBadge, TextField } from "./index";
 
-// The five quick picks shown on the page; every other color is one tap
+// The four quick picks shown on the page; every other color is one tap
 // away in the picker sheet.
-const QUICK_PICKS = ["Navy", "Teal", "Green", "Gold", "Pink"]
+const QUICK_PICKS = ["Navy", "Teal", "Gold", "Pink"]
   .map((name) => MEMBER_COLORS.find((option) => option.name === name))
   .filter((option): option is { name: string; hex: string } => option !== undefined);
 
@@ -32,7 +32,7 @@ const SWATCH = 44;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const sameColor = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
-// Picks a Member's profile color: five quick colors right on the page, and
+// Picks a Member's profile color: four quick colors right on the page, and
 // a palette button that opens a sheet with the full picker -- drag in the
 // square for how strong and how bright, along the rainbow bar for the hue,
 // or type an exact hex color -- with a live preview of the member's badge.
