@@ -17,31 +17,31 @@ export default function LoginScreen() {
   const navigation = useAppNavigation();
   const { signIn, notice } = useAuth();
   const palette = usePalette();
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    authStorage.getLastEmail().then((last) => {
-      if (last) setEmail((current) => current || last);
+    authStorage.getLastPhone().then((last) => {
+      if (last) setPhone((current) => current || last);
     });
   }, []);
 
   const submit = async () => {
-    if (!email.trim() || !password) {
-      setError("Enter your email and password.");
+    if (!phone.trim() || !password) {
+      setError("Enter your phone number and password.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const result = await api.auth.login(email.trim(), password);
+      const result = await api.auth.login(phone.trim(), password);
       await signIn(result.token, result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
-      setError(message === "invalid email or password" ? "That email and password don't match." : message || "Couldn't sign in.");
+      setError(message === "invalid phone or password" ? "That phone number and password don't match." : message || "Couldn't sign in.");
     } finally {
       setLoading(false);
     }
@@ -62,14 +62,13 @@ export default function LoginScreen() {
             {notice ? <Banner tone="warning">{notice}</Banner> : null}
             {error ? <Banner tone="error">{error}</Banner> : null}
             <TextField
-              label="Email"
-              placeholder="you@example.com"
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              value={email}
-              onChangeText={setEmail}
+              label="Phone number"
+              placeholder="Your phone number"
+              autoComplete="tel"
+              keyboardType="phone-pad"
+              textContentType="telephoneNumber"
+              value={phone}
+              onChangeText={setPhone}
             />
             <View>
               <TextField

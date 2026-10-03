@@ -103,7 +103,7 @@ full spec this and FR5-FR8 below implement.
 **Flow**
 1. On a phone no one has signed in on yet, the app opens on Create
    Profile (later, it's **New here? Create your profile** on the Login
-   screen). The person enters name/email/password, picks a profile color,
+   screen). The person enters name/phone number/password, picks a profile color (any color),
    and submits.
 2. The server creates the account (Member role, shown as a circle in the
    chosen color with their initials — no photo involved) and returns a session token, which the app
@@ -119,9 +119,10 @@ full spec this and FR5-FR8 below implement.
 **Acceptance criteria**
 - Password must be at least 8 characters (enforced client- and
   server-side).
-- A duplicate email is rejected with a clear error, not a generic failure.
+- A duplicate phone number is rejected with a clear error, not a generic failure.
+- The first profile ever created becomes the Admin.
 - Logging out clears the stored token and returns to Login (after a
-  confirmation); the Login screen pre-fills the last email used.
+  confirmation); the Login screen pre-fills the last phone number used.
 
 **Backend dependencies**
 - `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`,

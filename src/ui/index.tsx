@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { DEFAULT_MEMBER_COLOR, initials } from "../api/memberColors";
+import { DEFAULT_MEMBER_COLOR, initials, textColorFor } from "../api/memberColors";
 import { radius, requestColors, spacing, statusColors, usePalette } from "../theme";
 
 export type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -173,18 +173,19 @@ export function TextField({ label, error, style, ...props }: TextInputProps & { 
 
 // A Member's profile circle: initials on their chosen color (FR-1.2).
 export function MemberBadge({ name, color, size = 32 }: { name: string; color?: string | null; size?: number }) {
+  const fill = color || DEFAULT_MEMBER_COLOR;
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: color || DEFAULT_MEMBER_COLOR,
+        backgroundColor: fill,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ color: "#fff", fontWeight: "700", fontSize: Math.round(size * 0.4) }}>{initials(name) || "?"}</Text>
+      <Text style={{ color: textColorFor(fill), fontWeight: "700", fontSize: Math.round(size * 0.4) }}>{initials(name) || "?"}</Text>
     </View>
   );
 }

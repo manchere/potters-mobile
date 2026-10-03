@@ -17,7 +17,7 @@ const USER_KEY = "potters_portal_auth_user";
 const ACCESS_KEY = "potters_portal_access";
 // Pre-fills the sign-in form after signing out; also tells a first launch
 // (never signed in on this phone) from a later one.
-const LAST_EMAIL_KEY = "potters_portal_last_email";
+const LAST_PHONE_KEY = "potters_portal_last_phone";
 
 const isWeb = Platform.OS === "web";
 
@@ -65,13 +65,13 @@ export async function getUser(): Promise<User | null> {
 export async function setSession(token: string, user: User): Promise<void> {
   await write(TOKEN_KEY, token);
   await setUser(user);
-  await write(LAST_EMAIL_KEY, user.email);
+  await write(LAST_PHONE_KEY, user.phone);
 }
 
 export async function setUser(user: User): Promise<void> {
   // Only the profile fields -- never the token -- go in the user record.
-  const { id, name, email, is_admin, color } = user;
-  await write(USER_KEY, JSON.stringify({ id, name, email, is_admin, color }));
+  const { id, name, phone, is_admin, color } = user;
+  await write(USER_KEY, JSON.stringify({ id, name, phone, is_admin, color }));
 }
 
 export async function clearSession(): Promise<void> {
@@ -93,8 +93,8 @@ export async function setAccess(access: Access): Promise<void> {
   await write(ACCESS_KEY, JSON.stringify(access));
 }
 
-export function getLastEmail(): Promise<string | null> {
-  return read(LAST_EMAIL_KEY);
+export function getLastPhone(): Promise<string | null> {
+  return read(LAST_PHONE_KEY);
 }
 
 // The Home quick actions a member chose, in no particular order (Home lays

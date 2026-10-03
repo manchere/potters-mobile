@@ -1,31 +1,33 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
 
 import { api } from "../api/client";
-import { DEFAULT_MEMBER_COLOR, MEMBER_COLORS } from "../api/memberColors";
+import { DEFAULT_MEMBER_COLOR } from "../api/memberColors";
 import { useAuth } from "../auth/AuthContext";
 import { useAppNavigation } from "../navigation";
 import { spacing, usePalette } from "../theme";
 import { Banner, Button, Card, MemberBadge, Screen, TextField } from "../ui";
+import ColorPicker from "../ui/ColorPicker";
 
-// FR4 / FR-1.1a: self-service profile -- name, email, password, and a color
-// for the initials circle (FR-1.2). Signs straight in on success.
+// FR4 / FR-1.1a: self-service profile -- name, phone number, password, and
+// a color for the initials circle (FR-1.2). Signs straight in on success.
+// The first profile ever created becomes the Admin (server side).
 export default function RegisterScreen() {
   const navigation = useAppNavigation();
   const { signIn } = useAuth();
   const palette = usePalette();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [color, setColor] = useState(DEFAULT_MEMBER_COLOR);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
     const errors: typeof fieldErrors = {};
     if (!name.trim()) errors.name = "Enter your name.";
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) errors.email = "Enter a valid email address.";
+    if (phone.replace(/\D/g, "").length < 7) errors.phone = "Enter a valid phone number.";
     if (password.length < 8) errors.password = "Use at least 8 characters.";
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -33,7 +35,7 @@ export default function RegisterScreen() {
     setLoading(true);
     setError(null);
     try {
-      const result = await api.auth.register(name.trim(), email.trim(), password, color);
+      const result = await api.auth.register(name.trim(), phone.trim(), password, color);
       await signIn(result.token, result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't create your profile.");
@@ -54,36 +56,17 @@ export default function RegisterScreen() {
         {error ? <Banner tone="error">{error}</Banner> : null}
 
         <Card style={{ gap: spacing.md }}>
-          <TextField label="Full name" placeholder="e.g. Grace Adeyemi" value={name} onChangeText={setName} error={fieldErrors.name} autoComplete="name" />
-          <View style={{ gap: spacing.sm }}>
-            <Text style={[styles.label, { color: palette.softText }]}>Your color</Text>
-            <View style={styles.swatches}>
-              {MEMBER_COLORS.map((option) => {
-                const selected = option.hex === color;
-                return (
-                  <Pressable
-                    key={option.hex}
-                    accessibilityLabel={option.name}
-                    accessibilityState={{ selected }}
-                    onPress={() => setColor(option.hex)}
-                    style={[
-                      styles.swatch,
-                      { backgroundColor: option.hex, borderColor: selected ? palette.strongText : "transparent" },
-                    ]}
-                  />
-                );
-              })}
-            </View>
-          </View>
+          <TextField label="Name" value={name} onChangeText={setName} error={fieldErrors.name} autoComplete="name" />
+          <ColorPicker value={color} onChange={setColor} />
           <TextField
-            label="Email"
-            placeholder="you@example.com"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            value={email}
-            onChangeText={setEmail}
-            error={fieldErrors.email}
+            label="Phone number"
+            placeholder="You'll sign in with this"
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            value={phone}
+            onChangeText={setPhone}
+            error={fieldErrors.phone}
           />
           <TextField
             label="Password"
@@ -107,7 +90,4 @@ const styles = StyleSheet.create({
   preview: { alignItems: "center", gap: spacing.xs, paddingVertical: spacing.md },
   previewName: { fontSize: 20, fontWeight: "700", marginTop: spacing.sm },
   previewHint: { fontSize: 13 },
-  label: { fontSize: 13, fontWeight: "600" },
-  swatches: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  swatch: { width: 38, height: 38, borderRadius: 19, borderWidth: 3 },
 });

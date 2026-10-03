@@ -31,7 +31,7 @@ export default function ProfileScreen() {
       doSignOut();
       return;
     }
-    Alert.alert("Sign out?", "You'll need your email and password to sign in again.", [
+    Alert.alert("Sign out?", "You'll need your phone number and password to sign in again.", [
       { text: "Cancel", style: "cancel" },
       { text: "Sign Out", style: "destructive", onPress: doSignOut },
     ]);
@@ -43,7 +43,7 @@ export default function ProfileScreen() {
         <Card style={styles.profile}>
           <MemberBadge name={user.name} color={user.color} size={80} />
           <Text style={[styles.name, { color: palette.strongText }]}>{user.name}</Text>
-          <Text style={{ color: palette.mutedText, fontSize: 15 }}>{user.email}</Text>
+          <Text style={{ color: palette.mutedText, fontSize: 15 }}>{user.phone}</Text>
           {user.is_admin ? <Badge label="Admin" color={palette.dark ? palette.accentText : palette.primary} /> : null}
         </Card>
       ) : null}

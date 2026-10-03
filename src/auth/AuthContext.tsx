@@ -80,14 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [token, cached, cachedAccess, lastEmail] = await Promise.all([
+      const [token, cached, cachedAccess, lastPhone] = await Promise.all([
         authStorage.getToken(),
         authStorage.getUser(),
         authStorage.getAccess(),
-        authStorage.getLastEmail(),
+        authStorage.getLastPhone(),
       ]);
       if (!token) {
-        setFirstLaunch(!lastEmail);
+        setFirstLaunch(!lastPhone);
         setStatus("signedOut");
         return;
       }

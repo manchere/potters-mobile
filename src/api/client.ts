@@ -108,15 +108,15 @@ export const api = {
       }),
   },
   auth: {
-    register: (name: string, email: string, password: string, color: string) =>
+    register: (name: string, phone: string, password: string, color: string) =>
       request<AuthResponse>("/api/auth/register", {
         method: "POST",
-        body: JSON.stringify({ name, email, password, color }),
+        body: JSON.stringify({ name, phone, password, color }),
       }),
-    login: (email: string, password: string) =>
+    login: (phone: string, password: string) =>
       request<AuthResponse>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phone, password }),
       }),
     logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
     // Confirms the saved token and returns the member's current profile.
