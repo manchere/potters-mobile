@@ -2,24 +2,22 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { GestureResponderEvent, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { hexToHsv, hsvToHex, isHexColor, MEMBER_COLORS, textColorFor } from "../api/memberColors";
+import { hexToHsv, hsvToHex, isHexColor } from "../api/memberColors";
 import { radius, spacing, usePalette } from "../theme";
 import { TextField } from "./index";
 
-const SQUARE_HEIGHT = 170;
+const SQUARE_HEIGHT = 120;
 const HUE_HEIGHT = 26;
 const HUE_STOPS = ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ff0000"] as const;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-// Picks a Member's profile color: a palette of quick picks, then "Custom"
-// for a full picker -- drag in the square for how strong and how bright,
-// along the rainbow bar for the hue -- with a live preview and a hex box
-// for an exact color.
+// Picks a Member's profile color: drag in the square for how strong and
+// how bright, along the rainbow bar for the hue, or type an exact hex
+// color. Compact enough for the Create Profile screen to fit a phone
+// without scrolling; that screen's badge shows the result.
 export default function ColorPicker({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
   const palette = usePalette();
-  const isQuickPick = MEMBER_COLORS.some((option) => option.hex.toLowerCase() === value.toLowerCase());
-  const [custom, setCustom] = useState(!isQuickPick);
   // Kept separately from `value` so the hue survives dragging to grey/black,
   // where the hex alone can't say which hue it was.
   const [hsv, setHsv] = useState(() => hexToHsv(value));
@@ -28,8 +26,8 @@ export default function ColorPicker({ value, onChange }: { value: string; onChan
   const [squareWidth, setSquareWidth] = useState(0);
   const [hueWidth, setHueWidth] = useState(0);
 
-  // Follow a color chosen from outside (or a quick pick) unless it's the
-  // one the picker itself just produced.
+  // Follow a color chosen from outside unless it's the one the picker
+  // itself just produced.
   useEffect(() => {
     if (value.toLowerCase() !== hsvToHex(hsv.h, hsv.s, hsv.v)) {
       setHsv(hexToHsv(value));
@@ -42,11 +40,6 @@ export default function ColorPicker({ value, onChange }: { value: string; onChan
     setHsv(next);
     setHexError(null);
     onChange(hsvToHex(next.h, next.s, next.v));
-  };
-
-  const pickQuick = (color: string) => {
-    setHexError(null);
-    onChange(color);
   };
 
   const onSquareTouch = (event: GestureResponderEvent) => {
@@ -87,74 +80,47 @@ export default function ColorPicker({ value, onChange }: { value: string; onChan
     onResponderMove: handler,
   });
 
-  const swatch = (color: string, name: string) => {
-    const selected = color.toLowerCase() === value.toLowerCase();
-    return (
-      <Pressable
-        key={color}
-        accessibilityLabel={name}
-        accessibilityState={{ selected }}
-        onPress={() => pickQuick(color)}
-        style={[styles.swatch, { backgroundColor: color, borderColor: selected ? palette.strongText : "transparent" }]}
-      />
-    );
-  };
-
   const pureHue = hsvToHex(hsv.h, 1, 1);
 
   return (
-    <View style={{ gap: spacing.sm }}>
+    <View style={{ gap: spacing.xs }}>
       <Text style={[styles.label, { color: palette.softText }]}>Your color</Text>
 
-      <View style={styles.swatches}>
-        {MEMBER_COLORS.map((option) => swatch(option.hex, option.name))}
-        <Pressable
-          onPress={() => setCustom((open) => !open)}
-          accessibilityRole="button"
-          accessibilityLabel="Custom color"
-          accessibilityState={{ expanded: custom }}
-          style={[styles.swatch, styles.customSwatch, { borderColor: custom || !isQuickPick ? palette.strongText : palette.border }]}
+      <View style={[styles.panel, { backgroundColor: palette.subtle }]}>
+        {/* Saturation (across) x brightness (down) for the current hue. */}
+        <View
+          style={[styles.square, { backgroundColor: pureHue }]}
+          onLayout={(event: LayoutChangeEvent) => setSquareWidth(event.nativeEvent.layout.width)}
+          {...dragHandlers(onSquareTouch)}
         >
-          <LinearGradient colors={HUE_STOPS} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.customFill} />
-          <Text style={styles.customPlus}>+</Text>
-        </Pressable>
-      </View>
-
-      {custom ? (
-        <View style={[styles.panel, { backgroundColor: palette.subtle }]}>
-          {/* Saturation (across) x brightness (down) for the current hue. */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={["#ffffff", "rgba(255,255,255,0)"]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            pointerEvents="none"
+            colors={["rgba(0,0,0,0)", "#000000"]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
           <View
-            style={[styles.square, { backgroundColor: pureHue }]}
-            onLayout={(event: LayoutChangeEvent) => setSquareWidth(event.nativeEvent.layout.width)}
-            {...dragHandlers(onSquareTouch)}
-          >
-            <LinearGradient
-              pointerEvents="none"
-              colors={["#ffffff", "rgba(255,255,255,0)"]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <LinearGradient
-              pointerEvents="none"
-              colors={["rgba(0,0,0,0)", "#000000"]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View
-              pointerEvents="none"
-              style={[
-                styles.thumb,
-                {
-                  left: hsv.s * squareWidth - 11,
-                  top: (1 - hsv.v) * SQUARE_HEIGHT - 11,
-                  backgroundColor: value,
-                },
-              ]}
-            />
-          </View>
+            pointerEvents="none"
+            style={[
+              styles.thumb,
+              {
+                left: hsv.s * squareWidth - 11,
+                top: (1 - hsv.v) * SQUARE_HEIGHT - 11,
+                backgroundColor: value,
+              },
+            ]}
+          />
+        </View>
 
+        <View style={styles.hueRow}>
           {/* Hue. */}
           <View
             style={styles.hueBar}
@@ -173,38 +139,28 @@ export default function ColorPicker({ value, onChange }: { value: string; onChan
               style={[styles.hueThumb, { left: (hsv.h / 360) * hueWidth - 8, backgroundColor: pureHue }]}
             />
           </View>
-
-          <View style={styles.previewRow}>
-            <View style={[styles.preview, { backgroundColor: value }]}>
-              <Text style={{ color: textColorFor(value), fontWeight: "700" }}>Aa</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <TextField
-                label="Exact color (hex)"
-                placeholder="#3a7bd5"
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={7}
-                value={hex}
-                onChangeText={onHexChange}
-                error={hexError}
-              />
-            </View>
+          <View style={styles.hexBox}>
+            <TextField
+              accessibilityLabel="Exact color (hex)"
+              placeholder="#3a7bd5"
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={7}
+              value={hex}
+              onChangeText={onHexChange}
+              style={styles.hexInput}
+            />
           </View>
         </View>
-      ) : null}
+        {hexError ? <Text style={[styles.hexError, { color: palette.error }]}>{hexError}</Text> : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: "600" },
-  swatches: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  swatch: { width: 38, height: 38, borderRadius: 19, borderWidth: 3 },
-  customSwatch: { overflow: "hidden", alignItems: "center", justifyContent: "center" },
-  customFill: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
-  customPlus: { color: "#ffffff", fontSize: 20, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.5)", textShadowRadius: 3 },
-  panel: { gap: spacing.md, padding: spacing.md, borderRadius: radius.md },
+  panel: { gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md },
   square: { height: SQUARE_HEIGHT, borderRadius: radius.md, overflow: "hidden" },
   thumb: {
     position: "absolute",
@@ -218,7 +174,11 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  hueBar: { height: HUE_HEIGHT, justifyContent: "center" },
+  hueRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  hueBar: { flex: 1, height: HUE_HEIGHT, justifyContent: "center" },
+  hexBox: { width: 104 },
+  hexInput: { paddingVertical: 8, paddingHorizontal: spacing.sm },
+  hexError: { fontSize: 12 },
   hueThumb: {
     position: "absolute",
     width: 16,
@@ -232,6 +192,4 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  previewRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md },
-  preview: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", marginBottom: 2 },
 });

@@ -15,7 +15,9 @@ import ColorPicker from "../ui/ColorPicker";
 // a color for the initials circle (FR-1.2). Signs straight in on success.
 // The first profile ever created becomes the Admin (server side).
 // Same look as the sign-in screen: the app's navy background, logo, and
-// the form on a card.
+// the form on a card, sized so it all fits an iPhone 16 (393 x 852) without
+// scrolling; the ScrollView is only a fallback for smaller phones or an
+// open keyboard.
 export default function RegisterScreen() {
   const navigation = useAppNavigation();
   const { signIn } = useAuth();
@@ -60,14 +62,15 @@ export default function RegisterScreen() {
           </View>
 
           <Card style={styles.card}>
-            <View style={styles.preview}>
-              <MemberBadge name={name.trim() || "?"} color={color} size={72} />
-              <Text style={[styles.previewName, { color: palette.strongText }]}>{name.trim() || "Your name"}</Text>
-            </View>
-
             {error ? <Banner tone="error">{error}</Banner> : null}
 
-            <TextField label="Name" value={name} onChangeText={setName} error={fieldErrors.name} autoComplete="name" />
+            {/* The badge previews the name's initials on the chosen color. */}
+            <View style={styles.nameRow}>
+              <MemberBadge name={name.trim() || "?"} color={color} size={48} />
+              <View style={{ flex: 1 }}>
+                <TextField label="Name" value={name} onChangeText={setName} error={fieldErrors.name} autoComplete="name" />
+              </View>
+            </View>
             <ColorPicker value={color} onChange={setColor} />
             <TextField
               label="Phone number"
@@ -100,7 +103,7 @@ export default function RegisterScreen() {
                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={palette.mutedText} />
               </Pressable>
             </View>
-            <Button title="Create Profile" onPress={submit} loading={loading} style={{ marginTop: spacing.sm }} />
+            <Button title="Create Profile" onPress={submit} loading={loading} style={{ marginTop: spacing.xs }} />
           </Card>
 
           <Pressable onPress={() => navigation.navigate("Login")} style={styles.signInLink}>
@@ -115,17 +118,16 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, justifyContent: "center", padding: spacing.xl, gap: spacing.lg },
-  brand: { alignItems: "center", gap: spacing.sm },
-  logo: { width: 64, height: 64, borderRadius: 16 },
-  appName: { color: "#ffffff", fontSize: 24, fontWeight: "800", letterSpacing: 0.3 },
-  tagline: { color: "#cdd5e3", fontSize: 14, textAlign: "center" },
-  card: { gap: spacing.md, padding: spacing.xl, borderRadius: radius.lg },
-  preview: { alignItems: "center", gap: spacing.xs },
-  previewName: { fontSize: 18, fontWeight: "700", marginTop: spacing.xs },
+  scroll: { flexGrow: 1, justifyContent: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },
+  brand: { alignItems: "center", gap: spacing.xs },
+  logo: { width: 44, height: 44, borderRadius: 12 },
+  appName: { color: "#ffffff", fontSize: 22, fontWeight: "800", letterSpacing: 0.3 },
+  tagline: { color: "#cdd5e3", fontSize: 13, textAlign: "center" },
+  card: { gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg },
+  nameRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md },
   eye: { position: "absolute", right: 12, bottom: 12, padding: 2 },
   eyeWithError: { bottom: 34 },
-  signInLink: { alignItems: "center", paddingVertical: spacing.sm },
+  signInLink: { alignItems: "center", paddingVertical: spacing.xs },
   signInText: { color: "#cdd5e3", fontSize: 15 },
   signInStrong: { color: "#f0c75e", fontWeight: "700" },
 });
