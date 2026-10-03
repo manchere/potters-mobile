@@ -71,7 +71,7 @@ export default function RegisterScreen() {
                 <TextField label="Name" value={name} onChangeText={setName} error={fieldErrors.name} autoComplete="name" />
               </View>
             </View>
-            <ColorPicker value={color} onChange={setColor} />
+            <ColorPicker value={color} onChange={setColor} name={name} />
             <TextField
               label="Phone number"
               placeholder="You'll sign in with this"
@@ -118,7 +118,7 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, justifyContent: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },
+  scroll: { flexGrow: 1, justifyContent: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.md },
   brand: { alignItems: "center", gap: spacing.xs },
   logo: { width: 44, height: 44, borderRadius: 12 },
   appName: { color: "#ffffff", fontSize: 22, fontWeight: "800", letterSpacing: 0.3 },
