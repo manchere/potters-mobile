@@ -6,6 +6,10 @@ import { Platform } from "react-native";
 // elsewhere.
 const API_PORT = process.env.EXPO_PUBLIC_API_PORT || "8080";
 
+// The deployed PottersPortalServer (render.yaml) - what production builds,
+// like the website, use when EXPO_PUBLIC_API_URL isn't set.
+const PRODUCTION_API_URL = "https://potters-portal-api.onrender.com";
+
 // Matches a bare IPv4 address or a *.local mDNS name - the forms Metro's
 // hostUri takes on a LAN. A tunnel hostname (*.exp.direct) is neither, and
 // the tunnel only forwards Metro, not the API server.
@@ -27,13 +31,17 @@ function devMachineHost(): string | null {
 // Resolution order:
 //   1. EXPO_PUBLIC_API_URL (set in .env) - e.g. a cloudflared tunnel URL,
 //      required when using `expo start --tunnel` or a deployed server.
-//   2. The dev machine's LAN IP from Metro - makes Expo Go on a physical
+//   2. Production builds (the website, release apps): the deployed server.
+//   3. The dev machine's LAN IP from Metro - makes Expo Go on a physical
 //      phone on the same Wi-Fi work with no configuration.
-//   3. Emulator/simulator fallbacks: 10.0.2.2 is the Android emulator's
+//   4. Emulator/simulator fallbacks: 10.0.2.2 is the Android emulator's
 //      alias for the host machine; the iOS simulator shares its network.
 function defaultApiUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, "");
+  }
+  if (!__DEV__) {
+    return PRODUCTION_API_URL;
   }
   const lanHost = devMachineHost();
   if (lanHost) {
