@@ -43,8 +43,7 @@ export default function ItemListScreen() {
       ListHeaderComponent={
         <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
           <View style={styles.actions}>
-            <Button title="Scan" icon="barcode-outline" variant="secondary" onPress={() => navigation.navigate("Scan")} style={styles.actionButton} />
-            <Button title="Identify" icon="search-outline" variant="secondary" onPress={() => navigation.navigate("Identify")} style={styles.actionButton} />
+            <Button title="Find with Camera" icon="scan-outline" variant="secondary" onPress={() => navigation.navigate("FindItem")} style={styles.actionButton} />
             {access.sections.inventory.create ? (
               <Button title="Add" icon="add" onPress={() => navigation.navigate("AddItem")} style={styles.actionButton} />
             ) : null}

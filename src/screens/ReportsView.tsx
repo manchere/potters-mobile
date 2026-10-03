@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, SectionList, Share, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { api } from "../api/client";
@@ -7,9 +7,8 @@ import type { ReportRow } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { formatDate, monthsAgo, toIsoDate } from "../format";
 import { useFocusLoad } from "../hooks/useFocusLoad";
-import { useAppNavigation } from "../navigation";
 import { radius, spacing, usePalette } from "../theme";
-import { Badge, Banner, EmptyState } from "../ui";
+import { Badge, Banner, Button, EmptyState } from "../ui";
 
 const RANGES = [
   { label: "Last month", months: 1 },
@@ -26,11 +25,12 @@ function availabilityNote(row: ReportRow): string | null {
   return null;
 }
 
+// Schedule › History (members with the Reports "view" right).
+//
 // "Who did what" on past Sundays, like the desktop Reports tab: pick a
 // range, optionally search for a member or duty. Members with the Reports
 // "create" right (Save Report on the desktop) can share it as text.
-export default function ReportsScreen() {
-  const navigation = useAppNavigation();
+export default function ReportsView() {
   const palette = usePalette();
   const { access } = useAuth();
   const [months, setMonths] = useState(3);
@@ -65,17 +65,6 @@ export default function ReportsScreen() {
   }
 
   const canShare = access.sections.reports.create && sections.length > 0;
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: canShare
-        ? () => (
-            <Pressable onPress={() => shareReport(sections)} hitSlop={10} accessibilityLabel="Share report">
-              <Ionicons name="share-outline" size={22} color={palette.dark ? palette.accentText : palette.primary} />
-            </Pressable>
-          )
-        : undefined,
-    });
-  });
 
   return (
     <SectionList
@@ -123,6 +112,9 @@ export default function ReportsScreen() {
             <Text style={{ color: palette.mutedText, fontSize: 13 }}>
               {sections.length} {sections.length === 1 ? "Sunday" : "Sundays"} · {formatDate(from)} – {formatDate(to)}
             </Text>
+          ) : null}
+          {canShare ? (
+            <Button title="Share Report" icon="share-outline" variant="secondary" onPress={() => shareReport(sections)} />
           ) : null}
         </View>
       }

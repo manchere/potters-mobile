@@ -1,35 +1,64 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useRoute, type RouteProp } from "@react-navigation/native";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { api } from "../api/client";
-import type { AvailabilityMark, Duty } from "../api/types";
+import type { AvailabilityMark, Duty, NonAvailabilityRequest } from "../api/types";
 import { formatDate, MONTH_NAMES, parseDate, sundaysInMonth, toIsoDate } from "../format";
 import { useFocusLoad } from "../hooks/useFocusLoad";
+import type { TabParamList } from "../navigation";
 import { radius, spacing, usePalette } from "../theme";
 import { Banner, Card, Screen, SectionTitle } from "../ui";
+import RequestCard from "../ui/RequestCard";
 
-type CalendarData = { marks: AvailabilityMark[]; duties: Duty[] };
+type CalendarData = { marks: AvailabilityMark[]; duties: Duty[]; requests: NonAvailabilityRequest[] };
 
 const DUTY_GOLD = "#d4a72c";
 
+// Time off, in one place: the Sundays you'll be away and the time-off
+// requests you've sent about specific duties.
+//
 // FR6 / FR-3.1/3.2: tap the Sundays you expect to be away. Only Sundays are
 // shown -- duties only happen on Sundays, so no other day needs marking.
 // Informational only -- no message or approval; it's being scheduled on a
 // marked day that triggers the time-off request flow (FR-4.2, flagged on
 // Home/My Duties). Sundays you have a duty get a gold dot, so clashes are
 // easy to spot.
+//
+// FR8 / FR-4.5: below, every request sent, newest first, with its status.
 export default function AvailabilityCalendarScreen() {
   const palette = usePalette();
   const now = new Date();
   const [month, setMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const { data, setData, refreshing, error, refresh } = useFocusLoad<CalendarData>(
     async () => {
-      const [marks, duties] = await Promise.all([api.availability.list(), api.duties.listMine()]);
-      return { marks, duties };
+      const [marks, duties, requests] = await Promise.all([
+        api.availability.list(),
+        api.duties.listMine(),
+        api.nonAvailabilityRequests.listMine(),
+      ]);
+      return { marks, duties, requests };
     },
-    { marks: [], duties: [] },
+    { marks: [], duties: [], requests: [] },
   );
+  // Opened with focus "requests" (Home's "My requests"): scroll to them
+  // once they've been laid out.
+  const route = useRoute<RouteProp<TabParamList, "Calendar">>();
+  const scrollRef = useRef<ScrollView>(null);
+  const requestsY = useRef<number | null>(null);
+  const wantRequests = useRef(false);
+  const scrollToRequests = () => {
+    if (wantRequests.current && requestsY.current !== null) {
+      scrollRef.current?.scrollTo({ y: requestsY.current, animated: true });
+      wantRequests.current = false;
+    }
+  };
+  useEffect(() => {
+    wantRequests.current = route.params?.focus === "requests";
+    scrollToRequests();
+  }, [route.params]);
+
   const today = toIsoDate(now);
   const away = data.marks.map((mark) => mark.date);
   const dutyDates = new Set(data.duties.map((duty) => duty.service_date));
@@ -65,7 +94,7 @@ export default function AvailabilityCalendarScreen() {
   const tint = palette.dark ? palette.accentText : palette.primary;
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refresh}>
+    <Screen refreshing={refreshing} onRefresh={refresh} scrollRef={scrollRef}>
       <Banner tone="info">Tap a Sunday you expect to be away from church. Tap it again to undo.</Banner>
       {error ? <Banner tone="error">{error}</Banner> : null}
 
@@ -149,6 +178,23 @@ export default function AvailabilityCalendarScreen() {
           ))}
         </Card>
       )}
+
+      <View
+        style={{ gap: spacing.md }}
+        onLayout={(event) => {
+          requestsY.current = event.nativeEvent.layout.y;
+          scrollToRequests();
+        }}
+      >
+        <SectionTitle>Your time-off requests</SectionTitle>
+        {data.requests.length === 0 ? (
+          <Text style={{ color: palette.mutedText }}>
+            None yet. If you can't make a duty, tap it under Schedule › My duties to ask for time off.
+          </Text>
+        ) : (
+          data.requests.map((request) => <RequestCard key={request.id} request={request} />)
+        )}
+      </View>
     </Screen>
   );
 }

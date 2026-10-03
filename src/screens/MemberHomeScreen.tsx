@@ -1,22 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { getQuickActions, setQuickActions } from "../api/authStorage";
 import { api } from "../api/client";
 import type { Duty, NonAvailabilityRequest } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { firstName, greeting } from "../format";
 import { useFocusLoad } from "../hooks/useFocusLoad";
-import { useAppNavigation } from "../navigation";
+import { useAppNavigation, type ScheduleView } from "../navigation";
 import { radius, spacing, usePalette } from "../theme";
 import { Banner, Card, MemberBadge, SectionTitle, type IconName } from "../ui";
 import DutyCard from "../ui/DutyCard";
 
 type HomeData = { duties: Duty[]; requests: NonAvailabilityRequest[] };
 
+// On Home until the member changes their shortcuts (each still only when
+// their rights allow it). Everything else in the list can be added.
+const DEFAULT_ACTIONS = ["schedule", "timeOff", "inventory", "feedback"];
+
 // Member Home: who's signed in, what needs their attention (a duty on a day
 // they marked away -- FR-4.2), their next duty, and shortcuts -- only the
-// ones their access rights allow (desktop Settings > Access Rights).
+// ones their access rights allow (desktop Settings > Access Rights). Each
+// member picks which shortcuts are on Home (Edit), remembered on the phone
+// per member; until they do, Home shows DEFAULT_ACTIONS.
 export default function MemberHomeScreen() {
   const navigation = useAppNavigation();
   const { user, access, refreshAccess } = useAuth();
@@ -34,6 +42,61 @@ export default function MemberHomeScreen() {
     },
     { duties: [], requests: [] },
   );
+
+  // The shortcuts the member chose (null: the defaults), and whether
+  // they're choosing them now.
+  const [chosen, setChosen] = useState<string[] | null>(null);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (user) {
+      getQuickActions(user.id).then(setChosen);
+    }
+  }, [user?.id]);
+  const onHome = chosen ?? DEFAULT_ACTIONS;
+  const toggle = (key: string) => {
+    const next = onHome.includes(key) ? onHome.filter((other) => other !== key) : [...onHome, key];
+    setChosen(next);
+    if (user) {
+      setQuickActions(user.id, next);
+    }
+  };
+
+  // Every shortcut this member's rights allow, in the order Home shows them.
+  const schedule = (view: ScheduleView) => () => navigation.navigate("Tabs", { screen: "Schedule", params: { view } });
+  const actions: { key: string; icon: IconName; label: string; onPress: () => void }[] = [
+    { key: "schedule", icon: "people-outline", label: "Sunday schedule", onPress: schedule("sunday") },
+    { key: "myDuties", icon: "person-outline", label: "My duties", onPress: schedule("mine") },
+  ];
+  if (access.sections.reports.view) {
+    actions.push({ key: "history", icon: "time-outline", label: "Schedule history", onPress: schedule("history") });
+  }
+  actions.push(
+    { key: "timeOff", icon: "calendar-clear-outline", label: "Time off", onPress: () => navigation.navigate("Tabs", { screen: "Calendar", params: {} }) },
+    {
+      key: "requests",
+      icon: "paper-plane-outline",
+      label: "My time-off requests",
+      onPress: () => navigation.navigate("Tabs", { screen: "Calendar", params: { focus: "requests" } }),
+    },
+  );
+  if (access.sections.inventory.view) {
+    actions.push(
+      { key: "inventory", icon: "cube-outline", label: "Inventory", onPress: () => navigation.navigate("Tabs", { screen: "Inventory" }) },
+      { key: "findItem", icon: "scan-outline", label: "Find item", onPress: () => navigation.navigate("FindItem") },
+    );
+  }
+  if (access.sections.inventory.create) {
+    actions.push({ key: "addItem", icon: "camera-outline", label: "Add item", onPress: () => navigation.navigate("AddItem") });
+  }
+  if (access.sections.songs.view) {
+    actions.push({ key: "songs", icon: "musical-notes-outline", label: "Songs", onPress: () => navigation.navigate("Songs") });
+  }
+  if (access.sections.feedback.create || access.sections.feedback.update || access.sections.feedback.delete) {
+    actions.push({ key: "feedback", icon: "chatbubble-ellipses-outline", label: "Feedback", onPress: () => navigation.navigate("Feedback") });
+  }
+  const homeActions = actions.filter((action) => onHome.includes(action.key));
+  const moreActions = actions.filter((action) => !onHome.includes(action.key));
+  const tint = palette.dark ? palette.accentText : palette.primary;
 
   const conflicts = data.duties.filter((duty) => duty.conflicts_with_calendar && !duty.non_availability_request);
   const pending = data.requests.filter((request) => request.status === "pending").length;
@@ -93,39 +156,62 @@ export default function MemberHomeScreen() {
           </Card>
         )}
         {data.duties.length > 1 ? (
-          <Pressable onPress={() => navigation.navigate("MyDuties")}>
-            <Text style={[styles.seeAll, { color: palette.dark ? palette.accentText : palette.primary }]}>
+          <Pressable onPress={() => navigation.navigate("Tabs", { screen: "Schedule", params: { view: "mine" } })}>
+            <Text style={[styles.seeAll, { color: tint }]}>
               See all {data.duties.length} duties
             </Text>
           </Pressable>
         ) : null}
 
-        <SectionTitle>Quick actions</SectionTitle>
-        <View style={styles.actions}>
-          <Action icon="people-outline" label="Schedule" onPress={() => navigation.navigate("Tabs", { screen: "Schedule" })} />
-          <Action icon="calendar-number-outline" label="My duties" onPress={() => navigation.navigate("MyDuties")} />
-          <Action icon="calendar-clear-outline" label="Mark Sundays away" onPress={() => navigation.navigate("Tabs", { screen: "Calendar" })} />
-          <Action icon="paper-plane-outline" label="My requests" onPress={() => navigation.navigate("MyRequests")} />
-          {access.sections.reports.view ? (
-            <Action icon="document-text-outline" label="Reports" onPress={() => navigation.navigate("Reports")} />
-          ) : null}
-          {access.sections.songs.view ? (
-            <Action icon="musical-notes-outline" label="Songs" onPress={() => navigation.navigate("Songs")} />
-          ) : null}
-          {access.sections.inventory.view ? (
-            <>
-              <Action icon="cube-outline" label="Inventory" onPress={() => navigation.navigate("Tabs", { screen: "Inventory" })} />
-              <Action icon="barcode-outline" label="Scan barcode" onPress={() => navigation.navigate("Scan")} />
-              <Action icon="search-outline" label="Identify item" onPress={() => navigation.navigate("Identify")} />
-            </>
-          ) : null}
-          {access.sections.inventory.create ? (
-            <Action icon="camera-outline" label="Add item" onPress={() => navigation.navigate("AddItem")} />
-          ) : null}
-          {access.sections.feedback.create || access.sections.feedback.update || access.sections.feedback.delete ? (
-            <Action icon="chatbubble-ellipses-outline" label="Feedback" onPress={() => navigation.navigate("Feedback")} />
-          ) : null}
-        </View>
+        <SectionTitle
+          right={
+            <Pressable onPress={() => setEditing(!editing)} hitSlop={10} accessibilityRole="button">
+              <Text style={[styles.edit, { color: tint }]}>{editing ? "Done" : "Edit"}</Text>
+            </Pressable>
+          }
+        >
+          Quick actions
+        </SectionTitle>
+        {homeActions.length > 0 ? (
+          <View style={styles.actions}>
+            {homeActions.map((action) => (
+              <Action
+                key={action.key}
+                icon={action.icon}
+                label={action.label}
+                mark={editing ? "remove" : undefined}
+                onPress={editing ? () => toggle(action.key) : action.onPress}
+              />
+            ))}
+          </View>
+        ) : (
+          <Text style={{ color: palette.mutedText, fontSize: 14 }}>No shortcuts on Home. Tap Edit to add some.</Text>
+        )}
+        {editing ? (
+          <>
+            <Text style={{ color: palette.mutedText, fontSize: 13 }}>
+              {moreActions.length > 0
+                ? "Tap − to remove a shortcut from Home, or + below to add one."
+                : "Every shortcut you can use is on Home. Tap − to remove one."}
+            </Text>
+            {moreActions.length > 0 ? (
+              <>
+                <SectionTitle>More shortcuts</SectionTitle>
+                <View style={styles.actions}>
+                  {moreActions.map((action) => (
+                    <Action
+                      key={action.key}
+                      icon={action.icon}
+                      label={action.label}
+                      mark="add"
+                      onPress={() => toggle(action.key)}
+                    />
+                  ))}
+                </View>
+              </>
+            ) : null}
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -140,16 +226,39 @@ function Stat({ value, label }: { value: number; label: string }) {
   );
 }
 
-function Action({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+// A shortcut tile. While editing, a corner mark says what a tap does:
+// remove it from Home, or add it (those tiles are faded).
+function Action({
+  icon,
+  label,
+  onPress,
+  mark,
+}: {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  mark?: "add" | "remove";
+}) {
   const palette = usePalette();
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={mark === "add" ? `Add ${label} to Home` : mark === "remove" ? `Remove ${label} from Home` : label}
       style={({ pressed }) => [
         styles.action,
         { backgroundColor: pressed ? palette.subtle : palette.surface, borderColor: palette.border },
+        mark === "add" && { opacity: 0.6, borderStyle: "dashed" },
       ]}
     >
+      {mark ? (
+        <Ionicons
+          name={mark === "add" ? "add-circle" : "remove-circle"}
+          size={20}
+          color={mark === "add" ? (palette.dark ? palette.accentText : palette.primary) : palette.error}
+          style={styles.editMark}
+        />
+      ) : null}
       <View style={[styles.actionIcon, { backgroundColor: palette.subtle }]}>
         <Ionicons name={icon} size={22} color={palette.dark ? palette.accentText : palette.primary} />
       </View>
@@ -184,6 +293,7 @@ const styles = StyleSheet.create({
   statDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.15)" },
   body: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   seeAll: { fontSize: 14, fontWeight: "600", textAlign: "right" },
+  edit: { fontSize: 14, fontWeight: "700" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   action: {
     width: "31.5%",
@@ -193,6 +303,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
+  editMark: { position: "absolute", top: 6, right: 6 },
   actionIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   actionLabel: { fontSize: 12, fontWeight: "600", textAlign: "center" },
 });

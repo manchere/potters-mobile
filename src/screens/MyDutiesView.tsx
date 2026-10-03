@@ -9,11 +9,13 @@ import { spacing, usePalette } from "../theme";
 import { Banner, Button, EmptyState } from "../ui";
 import DutyCard from "../ui/DutyCard";
 
+// Schedule › My duties.
+//
 // FR5 / FR-2.1: every upcoming duty the member is on (serving or backup),
 // grouped by Sunday, soonest first. FR-4.2/4.3: a duty on a day they marked
 // away is flagged, and tapping a duty without a request opens the
 // time-off request form.
-export default function MyDutiesScreen() {
+export default function MyDutiesView() {
   const navigation = useAppNavigation();
   const palette = usePalette();
   const { data: duties, loading, refreshing, error, refresh } = useFocusLoad<Duty[]>(() => api.duties.listMine(), []);
@@ -40,10 +42,10 @@ export default function MyDutiesScreen() {
         <View style={{ gap: spacing.sm }}>
           {error ? <Banner tone="error">{error}</Banner> : null}
           <Button
-            title="My time-off requests"
+            title="My time off and requests"
             icon="paper-plane-outline"
             variant="secondary"
-            onPress={() => navigation.navigate("MyRequests")}
+            onPress={() => navigation.navigate("Tabs", { screen: "Calendar" })}
           />
         </View>
       }

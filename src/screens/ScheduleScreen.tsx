@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRoute, type RouteProp } from "@react-navigation/native";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -7,15 +8,54 @@ import type { Duty, ScheduleDay } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { addDays, formatDate, relativeSunday, toIsoDate, upcomingSunday } from "../format";
 import { useFocusLoad } from "../hooks/useFocusLoad";
-import { useAppNavigation } from "../navigation";
+import { useAppNavigation, type ScheduleView, type TabParamList } from "../navigation";
 import { spacing, usePalette } from "../theme";
-import { Badge, Banner, Button, Card, DutyPill, EmptyState, MemberBadge, Screen } from "../ui";
+import { Badge, Banner, Button, Card, DutyPill, EmptyState, MemberBadge, Screen, Segmented, type IconName } from "../ui";
+import MyDutiesView from "./MyDutiesView";
+import ReportsView from "./ReportsView";
 
-// Everyone serving on one Sunday, like the desktop Schedule tab: step a
+// The Schedule tab, three ways: one Sunday's whole line-up, the member's
+// own upcoming duties, and (with the Reports "view" right) who did what on
+// past Sundays. Other screens open a given view with
+// navigate("Tabs", { screen: "Schedule", params: { view } }).
+export default function ScheduleScreen() {
+  const palette = usePalette();
+  const { access } = useAuth();
+  const route = useRoute<RouteProp<TabParamList, "Schedule">>();
+  const [view, setView] = useState<ScheduleView>(route.params?.view ?? "sunday");
+  useEffect(() => {
+    if (route.params?.view) {
+      setView(route.params.view);
+    }
+  }, [route.params]);
+
+  const options: { key: ScheduleView; label: string; icon: IconName }[] = [
+    { key: "sunday", label: "Sunday", icon: "people-outline" },
+    { key: "mine", label: "My duties", icon: "person-outline" },
+  ];
+  if (access.sections.reports.view) {
+    options.push({ key: "history", label: "History", icon: "time-outline" });
+  }
+  const shown = options.some((option) => option.key === view) ? view : "sunday";
+
+  return (
+    <View style={{ flex: 1, backgroundColor: palette.background }}>
+      <View style={styles.switcher}>
+        <Segmented options={options} value={shown} onChange={setView} />
+      </View>
+      <View style={{ flex: 1 }}>
+        {shown === "sunday" ? <SundayView /> : shown === "mine" ? <MyDutiesView /> : <ReportsView />}
+      </View>
+    </View>
+  );
+}
+
+// Schedule › Sunday: everyone serving on one Sunday, like the desktop
+// Schedule tab: step a
 // week at a time with the arrows. Admins can add a duty, or tap one to
 // change who serves, the backup and the notes -- on upcoming Sundays only;
 // past ones are read-only for everyone.
-export default function ScheduleScreen() {
+function SundayView() {
   const navigation = useAppNavigation();
   const palette = usePalette();
   const { user, access } = useAuth();
@@ -126,6 +166,7 @@ function ScheduleRow({ duty, myId, onPress }: { duty: Duty; myId: number; onPres
 }
 
 const styles = StyleSheet.create({
+  switcher: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   dateCard: { flexDirection: "row", alignItems: "center", paddingVertical: spacing.md },
   date: { fontSize: 18, fontWeight: "700" },
   top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

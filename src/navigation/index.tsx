@@ -9,18 +9,14 @@ import AddItemScreen from "../screens/AddItemScreen";
 import AvailabilityCalendarScreen from "../screens/AvailabilityCalendarScreen";
 import DutyEditScreen from "../screens/DutyEditScreen";
 import FeedbackScreen from "../screens/FeedbackScreen";
-import IdentifyScreen from "../screens/IdentifyScreen";
+import FindItemScreen from "../screens/FindItemScreen";
 import ItemDetailScreen from "../screens/ItemDetailScreen";
 import ItemListScreen from "../screens/ItemListScreen";
 import LoginScreen from "../screens/LoginScreen";
 import MemberHomeScreen from "../screens/MemberHomeScreen";
-import MyDutiesScreen from "../screens/MyDutiesScreen";
-import MyRequestsScreen from "../screens/MyRequestsScreen";
 import NonAvailabilityRequestScreen from "../screens/NonAvailabilityRequestScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import RegisterScreen from "../screens/RegisterScreen";
-import ReportsScreen from "../screens/ReportsScreen";
-import ScanScreen from "../screens/ScanScreen";
 import ScheduleScreen from "../screens/ScheduleScreen";
 import SongDetailScreen from "../screens/SongDetailScreen";
 import SongEditScreen from "../screens/SongEditScreen";
@@ -28,10 +24,15 @@ import SongsScreen from "../screens/SongsScreen";
 import { usePalette } from "../theme";
 import { Loading, type IconName } from "../ui";
 
+// Schedule tab views: one Sunday's line-up, the member's own duties, and
+// past Sundays (Reports right). See ScheduleScreen.
+export type ScheduleView = "sunday" | "mine" | "history";
+
 export type TabParamList = {
   Home: undefined;
-  Schedule: undefined;
-  Calendar: undefined;
+  Schedule: { view?: ScheduleView } | undefined;
+  // focus "requests" opens Time off scrolled to the time-off requests.
+  Calendar: { focus?: "requests" } | undefined;
   Inventory: undefined;
   Profile: undefined;
 };
@@ -40,11 +41,8 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
-  MyDuties: undefined;
-  MyRequests: undefined;
   // Admins only; no duty means adding one to that Sunday.
   DutyEdit: { date: string; duty?: Duty };
-  Reports: undefined;
   Songs: undefined;
   SongDetail: { song: Song };
   // No song means adding one.
@@ -55,8 +53,8 @@ export type RootStackParamList = {
   AddItem:
     | { prefillImageBase64?: string; prefillName?: string; prefillDescription?: string; prefillBarcode?: string }
     | undefined;
-  Scan: undefined;
-  Identify: undefined;
+  // Barcode lookup and identify-by-photo in one camera.
+  FindItem: undefined;
 };
 
 // Any screen (tab or stack) can push the stack screens above.
@@ -95,7 +93,7 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={MemberHomeScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Schedule" }} />
-      <Tab.Screen name="Calendar" component={AvailabilityCalendarScreen} options={{ title: "Days Away", tabBarLabel: "Away" }} />
+      <Tab.Screen name="Calendar" component={AvailabilityCalendarScreen} options={{ title: "Time Off", tabBarLabel: "Time off" }} />
       {access.sections.inventory.view ? <Tab.Screen name="Inventory" component={ItemListScreen} /> : null}
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -144,10 +142,7 @@ export default function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
-            <Stack.Screen name="MyDuties" component={MyDutiesScreen} options={{ title: "My Duties" }} />
-            <Stack.Screen name="MyRequests" component={MyRequestsScreen} options={{ title: "My Requests" }} />
             <Stack.Screen name="DutyEdit" component={DutyEditScreen} options={{ title: "Duty", presentation: "modal" }} />
-            <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports" }} />
             <Stack.Screen name="Songs" component={SongsScreen} options={{ title: "Songs" }} />
             <Stack.Screen name="SongDetail" component={SongDetailScreen} options={{ title: "Song" }} />
             <Stack.Screen name="SongEdit" component={SongEditScreen} options={{ title: "Song" }} />
@@ -159,8 +154,7 @@ export default function RootNavigator() {
             />
             <Stack.Screen name="ItemDetail" component={ItemDetailScreen} options={{ title: "Item" }} />
             <Stack.Screen name="AddItem" component={AddItemScreen} options={{ title: "Add Item" }} />
-            <Stack.Screen name="Scan" component={ScanScreen} options={{ title: "Scan Barcode" }} />
-            <Stack.Screen name="Identify" component={IdentifyScreen} options={{ title: "Identify Item" }} />
+            <Stack.Screen name="FindItem" component={FindItemScreen} options={{ title: "Find Item" }} />
           </>
         )}
       </Stack.Navigator>

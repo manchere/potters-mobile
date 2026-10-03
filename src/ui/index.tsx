@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, ReactNode, Ref } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -29,6 +29,7 @@ export function Screen({
   scroll = true,
   padded = true,
   safeTop = false,
+  scrollRef,
 }: {
   children: ReactNode;
   refreshing?: boolean;
@@ -36,11 +37,14 @@ export function Screen({
   scroll?: boolean;
   padded?: boolean;
   safeTop?: boolean;
+  // To scroll the body from code (e.g. jump to a section).
+  scrollRef?: Ref<ScrollView>;
 }) {
   const palette = usePalette();
   const content = padded ? { padding: spacing.lg, gap: spacing.md } : undefined;
   const body = scroll ? (
     <ScrollView
+      ref={scrollRef}
       contentContainerStyle={[content, { flexGrow: 1 }]}
       keyboardShouldPersistTaps="handled"
       refreshControl={
@@ -309,6 +313,42 @@ export function ListRow({
   );
 }
 
+// A row of mutually exclusive choices, e.g. the Schedule's
+// This Sunday / My duties / History.
+export function Segmented<K extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { key: K; label: string; icon?: IconName }[];
+  value: K;
+  onChange: (key: K) => void;
+}) {
+  const palette = usePalette();
+  const tint = palette.dark ? palette.accentText : palette.primary;
+  return (
+    <View style={[styles.segmented, { backgroundColor: palette.subtle }]} accessibilityRole="tablist">
+      {options.map((option) => {
+        const active = option.key === value;
+        return (
+          <Pressable
+            key={option.key}
+            onPress={() => onChange(option.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            style={[styles.segment, active && { backgroundColor: palette.surface, borderColor: palette.border }]}
+          >
+            {option.icon ? <Ionicons name={option.icon} size={16} color={active ? tint : palette.mutedText} /> : null}
+            <Text style={[styles.segmentText, { color: active ? tint : palette.mutedText }]} numberOfLines={1}>
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function Divider() {
   const palette = usePalette();
   return <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: palette.divider, marginLeft: 64 }} />;
@@ -357,4 +397,17 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 15, fontWeight: "600" },
   rowSubtitle: { fontSize: 13 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
+  segmented: { flexDirection: "row", borderRadius: radius.md, padding: 3, gap: 3 },
+  segment: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: radius.md - 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "transparent",
+  },
+  segmentText: { fontSize: 13, fontWeight: "700" },
 });

@@ -96,3 +96,25 @@ export async function setAccess(access: Access): Promise<void> {
 export function getLastEmail(): Promise<string | null> {
   return read(LAST_EMAIL_KEY);
 }
+
+// The Home quick actions a member chose, in no particular order (Home lays
+// them out in its own order). Per member, since a phone can be shared; null
+// until they first change them, meaning Home's defaults. Kept on sign out
+// -- it's a preference, not part of the session.
+function quickActionsKey(userId: number): string {
+  return `potters_portal_quick_actions_${userId}`;
+}
+
+export async function getQuickActions(userId: number): Promise<string[] | null> {
+  const raw = await read(quickActionsKey(userId));
+  try {
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setQuickActions(userId: number, keys: string[]): Promise<void> {
+  await write(quickActionsKey(userId), JSON.stringify(keys));
+}

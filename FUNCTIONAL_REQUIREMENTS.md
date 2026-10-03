@@ -40,7 +40,7 @@ A member can scan a physical barcode/QR code stuck on an item to jump
 straight to its record, instead of searching by name.
 
 **Flow**
-1. Member taps **Scan Barcode** and points the camera at a code.
+1. Member taps **Find item** and points the camera at a code.
 2. The app looks the scanned value up against stored items.
 3. A match opens that item's detail screen. No match offers **Add as New
    Item** so the flow doesn't dead-end.
@@ -58,7 +58,7 @@ straight to its record, instead of searching by name.
 - `GET /api/items/barcode/:code` (new) — added in `Server/ServerMain.cpp`
 - Barcode is optional on create/update via the existing item JSON payload.
 
-**Status:** implemented — [ScanScreen.tsx](src/screens/ScanScreen.tsx)
+**Status:** implemented — [FindItemScreen.tsx](src/screens/FindItemScreen.tsx)
 
 ## FR3 — Scan an item from a picture and display its information
 
@@ -67,7 +67,8 @@ to dig for) and have the app try to identify which existing inventory
 record it is, showing that item's information.
 
 **Flow**
-1. Member taps **Identify by Photo** and takes a photo of the item.
+1. Member taps **Find item** and, with no code to scan, takes a photo of
+   the item with the shutter button.
 2. The app sends the photo to the vision endpoint for a name/description
    guess, then ranks existing inventory items by word overlap with that
    guess.
@@ -90,7 +91,8 @@ record it is, showing that item's information.
 - `GET /api/items` (existing) — full list is fetched client-side and ranked
   locally; there is no server-side search/match endpoint today.
 
-**Status:** implemented — [IdentifyScreen.tsx](src/screens/IdentifyScreen.tsx)
+**Status:** implemented — [FindItemScreen.tsx](src/screens/FindItemScreen.tsx) (the same
+camera as FR2: a code in view is looked up, the shutter identifies by photo)
 
 ## FR4 — Create a profile and log in
 
@@ -137,11 +139,11 @@ badges (SCHEDULING FR-7.4). Member Home shows the next one.
 
 **Backend dependencies:** `GET /api/duties/me` (new)
 
-**Status:** implemented — [MyDutiesScreen.tsx](src/screens/MyDutiesScreen.tsx)
+**Status:** implemented — Schedule tab › My duties, [MyDutiesView.tsx](src/screens/MyDutiesView.tsx)
 
 ## FR6 — Mark general availability
 
-**Flow:** Member Home → Away tab → tap a Sunday to toggle it as a day the
+**Flow:** Member Home → Time off tab → tap a Sunday to toggle it as a day the
 Member expects not to be at church. Only Sundays are shown (one tile per
 Sunday, a month at a time), since duties only happen on Sundays; past
 Sundays can't be changed. Informational only — no
@@ -154,7 +156,7 @@ collides with a marked date).
 
 ## FR7 — Request time off for a specific duty
 
-**Flow:** My Duties flags any duty whose date collides with a
+**Flow:** Schedule › My duties flags any duty whose date collides with a
 general-calendar mark; tapping it (or any duty without an existing
 request) opens a message form. Submitting requires a non-empty message and
 creates a pending request an Admin must approve/deny (desktop app).
@@ -165,18 +167,18 @@ creates a pending request an Admin must approve/deny (desktop app).
 
 ## FR8 — View my request statuses
 
-**Flow:** Member Home → My Requests lists every request the Member has
-submitted with its current status (pending/approved/denied).
+**Flow:** Time off tab, under the Sundays marked away, lists every request
+the Member has submitted with its current status (pending/approved/denied).
 
 **Backend dependencies:** `GET /api/non-availability-requests/me` (new)
 
 Each request shows the duty and date it's about.
 
-**Status:** implemented — [MyRequestsScreen.tsx](src/screens/MyRequestsScreen.tsx)
+**Status:** implemented — [AvailabilityCalendarScreen.tsx](src/screens/AvailabilityCalendarScreen.tsx), [RequestCard.tsx](src/ui/RequestCard.tsx)
 
 ## FR9 — See the Sunday schedule
 
-**Flow:** Schedule tab → everyone serving on a Sunday (duty, who serves,
+**Flow:** Schedule tab › Sunday → everyone serving on a Sunday (duty, who serves,
 backup, notes), a week at a time; the member's own duties are marked.
 Admins can add a duty on an upcoming Sunday, or tap one to change who
 serves, the backup and the notes, or remove it. Past Sundays are
@@ -190,7 +192,7 @@ read-only for everyone.
 
 ## FR10 — Schedule reports, songs and feedback
 
-- **Reports:** who did what on past Sundays (last month / 3 months /
+- **Reports** (Schedule tab › History): who did what on past Sundays (last month / 3 months /
   year), filterable by member or duty, with the same availability tags as
   the desktop report. Shareable as text with the Reports "create" right.
 - **Songs:** the song library with key, play link and lyrics; add, edit
@@ -203,7 +205,7 @@ read-only for everyone.
 `PUT/DELETE /api/songs/:id`, `GET/POST /api/feedback`,
 `PATCH/DELETE /api/feedback/:id` (new)
 
-**Status:** implemented — [ReportsScreen.tsx](src/screens/ReportsScreen.tsx), [SongsScreen.tsx](src/screens/SongsScreen.tsx), [FeedbackScreen.tsx](src/screens/FeedbackScreen.tsx)
+**Status:** implemented — [ReportsView.tsx](src/screens/ReportsView.tsx), [SongsScreen.tsx](src/screens/SongsScreen.tsx), [FeedbackScreen.tsx](src/screens/FeedbackScreen.tsx)
 
 ## Access rights
 
@@ -218,9 +220,35 @@ changes are for Admins only, as on the desktop.
 
 The app uses the desktop app's colors (src/theme): the phone's light mode
 matches the desktop "Light" theme, dark mode matches "Navy & Gold". A
-bottom tab bar holds Home, Schedule, Away, Inventory (with Inventory
-"view") and Profile; My Duties opens from Home and Profile; dates
-read day first ("Sun 4 Oct 2026") like the desktop.
+bottom tab bar holds Home, Schedule, Time off, Inventory (with Inventory
+"view") and Profile. Each place covers one job:
+
+- **Schedule** switches between *Sunday* (everyone serving, a week at a
+  time), *My duties* and, with the Reports right, *History*.
+- **Time off** holds the Sundays marked away and the time-off requests sent.
+- **Find item** is one camera for barcode lookup and identify-by-photo.
+
+Home's quick actions are each member's own pick. **Edit** beside Quick
+actions shows the shortcuts on Home (tap − to remove) and, under "More
+shortcuts", every other one their rights allow (tap + to add):
+
+| Shortcut | Opens | Needs |
+|---|---|---|
+| Sunday schedule *(default)* | Schedule › Sunday | — |
+| My duties | Schedule › My duties | — |
+| Schedule history | Schedule › History | Reports "view" |
+| Time off *(default)* | Time off | — |
+| My time-off requests | Time off, scrolled to the requests | — |
+| Inventory *(default)* | Inventory | Inventory "view" |
+| Find item | Find item camera | Inventory "view" |
+| Add item | Add Item | Inventory "create" |
+| Songs | Songs | Songs "view" |
+| Feedback *(default)* | Feedback | any Feedback right |
+
+Until a member changes them, Home shows the four defaults (each only with
+the right it needs). The choice is kept on the phone, per member, and
+survives signing out. Dates read day first
+("Sun 4 Oct 2026") like the desktop.
 
 ## Out of scope (for now)
 

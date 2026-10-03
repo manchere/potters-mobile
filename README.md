@@ -16,13 +16,14 @@ detailed requirements and acceptance criteria behind each camera/scan flow.
   `POST /api/vision/describe-item` (Groq vision) to pre-fill a name/description,
   then lets the member review/edit before saving. The photo is attached via
   `POST /api/items/:id/image` after the item is created.
-- **Scan** (FR2) — opens the camera in barcode/QR mode, looks the code up via
-  `GET /api/items/barcode/:code`, and jumps to that item's detail. An
-  unmatched code offers "Add as New Item" instead of dead-ending.
-- **Identify by photo** (FR3) — opens the camera, takes a photo, gets a
-  vision suggestion, then ranks it against every existing item's name to
-  show "possible matches" the member can pick from. No match carries the
-  photo + suggestion forward into Add Item instead of dead-ending.
+- **Find item** (FR2 + FR3) — one camera for both ways of finding an item:
+  - a barcode/QR code in view is looked up via
+    `GET /api/items/barcode/:code` and opens that item. An unmatched code
+    offers "Add as New Item" instead of dead-ending;
+  - for an item without a code, the shutter takes a photo, gets a vision
+    suggestion, then ranks it against every existing item's name to show
+    "possible matches". No match carries the photo + suggestion forward
+    into Add Item instead of dead-ending.
 - **Item detail** — shows the stored photo, status, quantity, location, and
   barcode.
 
@@ -114,8 +115,7 @@ mobile/
       ItemListScreen.tsx
       ItemDetailScreen.tsx
       AddItemScreen.tsx       # camera capture -> vision suggest -> save (FR1)
-      ScanScreen.tsx           # barcode scan -> lookup -> detail (FR2)
-      IdentifyScreen.tsx        # photo -> vision suggest -> ranked matches (FR3)
+      FindItemScreen.tsx       # barcode -> lookup, or photo -> ranked matches (FR2, FR3)
 ```
 
 ## Not yet implemented

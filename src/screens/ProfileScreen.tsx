@@ -50,11 +50,18 @@ export default function ProfileScreen() {
 
       <SectionTitle>My schedule</SectionTitle>
       <Card style={{ padding: 0, gap: 0 }}>
-        <ListRow icon="calendar-number-outline" title="My duties" onPress={() => navigation.navigate("MyDuties")} />
+        <ListRow
+          icon="calendar-number-outline"
+          title="My duties"
+          onPress={() => navigation.navigate("Tabs", { screen: "Schedule", params: { view: "mine" } })}
+        />
         <Divider />
-        <ListRow icon="calendar-clear-outline" title="Sundays I'll be away" onPress={() => navigation.navigate("Tabs", { screen: "Calendar" })} />
-        <Divider />
-        <ListRow icon="paper-plane-outline" title="My time-off requests" onPress={() => navigation.navigate("MyRequests")} />
+        <ListRow
+          icon="calendar-clear-outline"
+          title="Time off"
+          subtitle="Sundays I'll be away and my requests"
+          onPress={() => navigation.navigate("Tabs", { screen: "Calendar" })}
+        />
       </Card>
 
       <SectionTitle>Church</SectionTitle>
@@ -63,7 +70,11 @@ export default function ProfileScreen() {
         {access.sections.reports.view ? (
           <>
             <Divider />
-            <ListRow icon="document-text-outline" title="Reports" onPress={() => navigation.navigate("Reports")} />
+            <ListRow
+              icon="document-text-outline"
+              title="Reports"
+              onPress={() => navigation.navigate("Tabs", { screen: "Schedule", params: { view: "history" } })}
+            />
           </>
         ) : null}
         {access.sections.songs.view ? (
