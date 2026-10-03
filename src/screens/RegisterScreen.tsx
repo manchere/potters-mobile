@@ -1,17 +1,21 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "../api/client";
 import { DEFAULT_MEMBER_COLOR } from "../api/memberColors";
 import { useAuth } from "../auth/AuthContext";
 import { useAppNavigation } from "../navigation";
-import { spacing, usePalette } from "../theme";
-import { Banner, Button, Card, MemberBadge, Screen, TextField } from "../ui";
+import { radius, spacing, usePalette } from "../theme";
+import { Banner, Button, Card, MemberBadge, TextField } from "../ui";
 import ColorPicker from "../ui/ColorPicker";
 
 // FR4 / FR-1.1a: self-service profile -- name, phone number, password, and
 // a color for the initials circle (FR-1.2). Signs straight in on success.
 // The first profile ever created becomes the Admin (server side).
+// Same look as the sign-in screen: the app's navy background, logo, and
+// the form on a card.
 export default function RegisterScreen() {
   const navigation = useAppNavigation();
   const { signIn } = useAuth();
@@ -19,6 +23,7 @@ export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [color, setColor] = useState(DEFAULT_MEMBER_COLOR);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string; password?: string }>({});
@@ -45,49 +50,82 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Screen>
-        <View style={styles.preview}>
-          <MemberBadge name={name.trim() || "?"} color={color} size={88} />
-          <Text style={[styles.previewName, { color: palette.strongText }]}>{name.trim() || "Your name"}</Text>
-          <Text style={[styles.previewHint, { color: palette.mutedText }]}>This is how you'll appear on the schedule.</Text>
-        </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: palette.dark ? palette.background : "#0b1a33" }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <View style={styles.brand}>
+            <Image source={require("../../assets/logo.png")} style={styles.logo} />
+            <Text style={styles.appName}>Create your profile</Text>
+            <Text style={styles.tagline}>This is how you'll appear on the schedule.</Text>
+          </View>
 
-        {error ? <Banner tone="error">{error}</Banner> : null}
+          <Card style={styles.card}>
+            <View style={styles.preview}>
+              <MemberBadge name={name.trim() || "?"} color={color} size={72} />
+              <Text style={[styles.previewName, { color: palette.strongText }]}>{name.trim() || "Your name"}</Text>
+            </View>
 
-        <Card style={{ gap: spacing.md }}>
-          <TextField label="Name" value={name} onChangeText={setName} error={fieldErrors.name} autoComplete="name" />
-          <ColorPicker value={color} onChange={setColor} />
-          <TextField
-            label="Phone number"
-            placeholder="You'll sign in with this"
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            textContentType="telephoneNumber"
-            value={phone}
-            onChangeText={setPhone}
-            error={fieldErrors.phone}
-          />
-          <TextField
-            label="Password"
-            placeholder="At least 8 characters"
-            secureTextEntry
-            autoComplete="new-password"
-            value={password}
-            onChangeText={setPassword}
-            error={fieldErrors.password}
-          />
-          <Button title="Create Profile" onPress={submit} loading={loading} style={{ marginTop: spacing.sm }} />
-        </Card>
+            {error ? <Banner tone="error">{error}</Banner> : null}
 
-        <Button title="Already have a profile? Sign in" variant="ghost" onPress={() => navigation.navigate("Login")} />
-      </Screen>
-    </KeyboardAvoidingView>
+            <TextField label="Name" value={name} onChangeText={setName} error={fieldErrors.name} autoComplete="name" />
+            <ColorPicker value={color} onChange={setColor} />
+            <TextField
+              label="Phone number"
+              placeholder="You'll sign in with this"
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              textContentType="telephoneNumber"
+              value={phone}
+              onChangeText={setPhone}
+              error={fieldErrors.phone}
+            />
+            <View>
+              <TextField
+                label="Password"
+                placeholder="At least 8 characters"
+                secureTextEntry={!showPassword}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                value={password}
+                onChangeText={setPassword}
+                error={fieldErrors.password}
+                onSubmitEditing={submit}
+                returnKeyType="go"
+              />
+              <Pressable
+                style={[styles.eye, fieldErrors.password ? styles.eyeWithError : null]}
+                onPress={() => setShowPassword((shown) => !shown)}
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+              >
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={palette.mutedText} />
+              </Pressable>
+            </View>
+            <Button title="Create Profile" onPress={submit} loading={loading} style={{ marginTop: spacing.sm }} />
+          </Card>
+
+          <Pressable onPress={() => navigation.navigate("Login")} style={styles.signInLink}>
+            <Text style={styles.signInText}>
+              Already have a profile? <Text style={styles.signInStrong}>Sign in</Text>
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  preview: { alignItems: "center", gap: spacing.xs, paddingVertical: spacing.md },
-  previewName: { fontSize: 20, fontWeight: "700", marginTop: spacing.sm },
-  previewHint: { fontSize: 13 },
+  scroll: { flexGrow: 1, justifyContent: "center", padding: spacing.xl, gap: spacing.lg },
+  brand: { alignItems: "center", gap: spacing.sm },
+  logo: { width: 64, height: 64, borderRadius: 16 },
+  appName: { color: "#ffffff", fontSize: 24, fontWeight: "800", letterSpacing: 0.3 },
+  tagline: { color: "#cdd5e3", fontSize: 14, textAlign: "center" },
+  card: { gap: spacing.md, padding: spacing.xl, borderRadius: radius.lg },
+  preview: { alignItems: "center", gap: spacing.xs },
+  previewName: { fontSize: 18, fontWeight: "700", marginTop: spacing.xs },
+  eye: { position: "absolute", right: 12, bottom: 12, padding: 2 },
+  eyeWithError: { bottom: 34 },
+  signInLink: { alignItems: "center", paddingVertical: spacing.sm },
+  signInText: { color: "#cdd5e3", fontSize: 15 },
+  signInStrong: { color: "#f0c75e", fontWeight: "700" },
 });

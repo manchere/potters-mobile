@@ -137,7 +137,7 @@ export default function RootNavigator() {
         {status === "signedOut" ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Register" component={RegisterScreen} options={{ title: "Create Profile" }} />
+            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
           </>
         ) : (
           <>
